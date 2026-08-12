@@ -10,7 +10,7 @@ Ein warmer, deutschsprachiger **WhatsApp-Begleiter für Mama** — mit italienis
 [![Workers AI](https://img.shields.io/badge/Workers%20AI-Llama%203.1%208B-purple?logo=cloudflare)](https://developers.cloudflare.com/workers-ai/)
 [![WhatsApp Cloud API](https://img.shields.io/badge/WhatsApp-Cloud%20API-green?logo=whatsapp)](https://developers.facebook.com/docs/whatsapp/cloud-api)
 [![Tests](https://img.shields.io/badge/tests-11%20passing-brightgreen)](https://github.com/maxkru92/mama-bot/actions)
-[![Kosten](https://img.shields.io/badge/Kosten-0%E2%82%AC%2FMonat-success)]()
+[![Kosten](https://img.shields.io/badge/Kosten-0%E2%82%AC%2FMonat-success)](<>)
 
 **100 % kostenlos betreibbar** im Cloudflare Free Tier — offizielle Meta WhatsApp Cloud API, keine Green-API, kein WAHA, kein Server.
 
@@ -38,19 +38,19 @@ Ein warmer, deutschsprachiger **WhatsApp-Begleiter für Mama** — mit italienis
 
 ## ✨ Eigenschaften
 
-| | |
-|---|---|
-| 🔐 | Offizieller **Meta-Webhook** mit Verify-Token und HMAC-SHA256-Signaturprüfung |
-| 🗄️ | **D1** (serverless SQLite) für Gespräche, Präferenzen, Einwilligung, Outbox und Audit-Log |
-| 📬 | **Cloudflare Queue** für verzögerte Verarbeitung, Retries und Dead-Letter-Steuerung |
-| ⏰ | **Cron-Trigger** alle 5 Minuten für Morgen-Gruß und Outbox-Recovery |
-| 🧠 | **Workers AI** (Llama 3.1 8B) mit deterministischem Fallback bei KI- oder Quotenfehlern |
-| 🔁 | Deduplizierung von Meta-Retries, at-least-once-Zustellung mit begrenzten Retries |
-| 👥 | Nummern-Allowlist: **nur Mamas Nummer** wird verarbeitet |
-| 🛑 | `STOPP`, `PAUSE` und `START` steuern die proaktiven Nachrichten |
-| 🍝 | 14 kuratierte Themen: Italien, Toskana, Meer, Reisen, Rezepte, Wein, Feste & mehr |
-| 🎲 | Morgen-Gruß zu einer **leicht variierenden Uhrzeit** (±10 Min, deterministisch pro Tag) |
-| 🧪 | 11 Unit-Tests, Typecheck und Prettier — CI via GitHub Actions |
+|     |                                                                                           |
+| --- | ----------------------------------------------------------------------------------------- |
+| 🔐  | Offizieller **Meta-Webhook** mit Verify-Token und HMAC-SHA256-Signaturprüfung             |
+| 🗄️  | **D1** (serverless SQLite) für Gespräche, Präferenzen, Einwilligung, Outbox und Audit-Log |
+| 📬  | **Cloudflare Queue** für verzögerte Verarbeitung, Retries und Dead-Letter-Steuerung       |
+| ⏰  | **Cron-Trigger** alle 5 Minuten für Morgen-Gruß und Outbox-Recovery                       |
+| 🧠  | **Workers AI** (Llama 3.1 8B) mit deterministischem Fallback bei KI- oder Quotenfehlern   |
+| 🔁  | Deduplizierung von Meta-Retries, at-least-once-Zustellung mit begrenzten Retries          |
+| 👥  | Nummern-Allowlist: **nur Mamas Nummer** wird verarbeitet                                  |
+| 🛑  | `STOPP`, `PAUSE` und `START` steuern die proaktiven Nachrichten                           |
+| 🍝  | 14 kuratierte Themen: Italien, Toskana, Meer, Reisen, Rezepte, Wein, Feste & mehr         |
+| 🎲  | Morgen-Gruß zu einer **leicht variierenden Uhrzeit** (±10 Min, deterministisch pro Tag)   |
+| 🧪  | 11 Unit-Tests, Typecheck und Prettier — CI via GitHub Actions                             |
 
 ---
 
@@ -228,16 +228,17 @@ pie title Cloudflare Free Tier vs. Bot-Verbrauch (Stand 2026)
     "Tatsächlicher Verbrauch (~100 Nachrichten/Tag)" : 1
 ```
 
-| Komponente | Free-Tier | Bot-Verbrauch | Kosten |
-|---|---|---|---|
-| Workers | 100.000 Requests/Tag | ~100/Tag | **0 €** |
-| D1 | 5 GB, 5 M Reads/Tag | winzige Datenmenge | **0 €** |
-| Queue | 10.000 Ops/Tag | ~50/Tag | **0 €** |
-| Cron-Trigger | unbegrenzt | alle 5 Min | **0 €** |
-| Workers AI | 10.000 Neuronen/Tag | ~100 Neuronen/Nachricht | **0 €** |
-| WhatsApp (Meta) | Antworten im 24h-Fenster kostenlos | nur im Fenster | **0 €** |
+| Komponente      | Free-Tier                          | Bot-Verbrauch           | Kosten  |
+| --------------- | ---------------------------------- | ----------------------- | ------- |
+| Workers         | 100.000 Requests/Tag               | ~100/Tag                | **0 €** |
+| D1              | 5 GB, 5 M Reads/Tag                | winzige Datenmenge      | **0 €** |
+| Queue           | 10.000 Ops/Tag                     | ~50/Tag                 | **0 €** |
+| Cron-Trigger    | unbegrenzt                         | alle 5 Min              | **0 €** |
+| Workers AI      | 10.000 Neuronen/Tag                | ~100 Neuronen/Nachricht | **0 €** |
+| WhatsApp (Meta) | Antworten im 24h-Fenster kostenlos | nur im Fenster          | **0 €** |
 
 **Zero-Cost-Garantien im Code:**
+
 - Der Bot versendet proaktiv **nur**, wenn Mamas letzte Nachricht ≤ 24 h zurückliegt (kostenloses Meta-Fenster).
 - Bei erschöpfter KI-Quote antwortet er mit kuratierten Fallback-Texten statt Kosten zu erzeugen.
 - `STOPP` deaktiviert alle proaktiven Nachrichten sofort.
@@ -334,19 +335,19 @@ mama-bot/
 
 ## ⚙️ Konfiguration
 
-| Variable | Zweck | Standard |
-|---|---|---|
-| `MOTHER_PHONE` | Mamas Nummer ohne `+` | — (Pflicht) |
-| `WHATSAPP_TOKEN` | Meta Access Token | — (Pflicht) |
-| `WHATSAPP_PHONE_NUMBER_ID` | Meta Phone Number ID | — (Pflicht) |
-| `WHATSAPP_VERIFY_TOKEN` | Webhook-Verify-Token | — (Pflicht) |
-| `META_APP_SECRET` | App-Secret für HMAC | — (Pflicht) |
-| `MOTHER_TIMEZONE` | Zeitzone für Morgen-Gruß | `Europe/Berlin` |
-| `MORNING_HOUR` / `MORNING_MINUTE` | Zielzeit des Grußes | `8:00` |
-| `MORNING_VARIANCE_MINUTES` | Varianz der Grußzeit | `10` |
-| `MOTHER_NAME` | Persönliche Anrede | `Mama` |
-| `AI_MODEL` | Workers-AI-Modell | `@cf/meta/llama-3.1-8b-instruct-fp8-fast` |
-| `MAX_REPLY_CHARS` | Maximale Antwortlänge | `2800` |
+| Variable                          | Zweck                    | Standard                                  |
+| --------------------------------- | ------------------------ | ----------------------------------------- |
+| `MOTHER_PHONE`                    | Mamas Nummer ohne `+`    | — (Pflicht)                               |
+| `WHATSAPP_TOKEN`                  | Meta Access Token        | — (Pflicht)                               |
+| `WHATSAPP_PHONE_NUMBER_ID`        | Meta Phone Number ID     | — (Pflicht)                               |
+| `WHATSAPP_VERIFY_TOKEN`           | Webhook-Verify-Token     | — (Pflicht)                               |
+| `META_APP_SECRET`                 | App-Secret für HMAC      | — (Pflicht)                               |
+| `MOTHER_TIMEZONE`                 | Zeitzone für Morgen-Gruß | `Europe/Berlin`                           |
+| `MORNING_HOUR` / `MORNING_MINUTE` | Zielzeit des Grußes      | `8:00`                                    |
+| `MORNING_VARIANCE_MINUTES`        | Varianz der Grußzeit     | `10`                                      |
+| `MOTHER_NAME`                     | Persönliche Anrede       | `Mama`                                    |
+| `AI_MODEL`                        | Workers-AI-Modell        | `@cf/meta/llama-3.1-8b-instruct-fp8-fast` |
+| `MAX_REPLY_CHARS`                 | Maximale Antwortlänge    | `2800`                                    |
 
 ---
 
