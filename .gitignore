@@ -1,0 +1,24 @@
+# Dependencies
+node_modules/
+
+# Cloudflare / Wrangler
+.wrangler/
+dist/
+
+# Tests & coverage
+coverage/
+
+# Secrets - NEVER commit these
+.env
+.env.*
+!.env.example
+secrets.env
+secrets.env.*
+!secrets.env.example
+.dev.vars
+
+# OS & editor
+.DS_Store
+*.log
+*.sqlite
+*.sqlite3

@@ -1,0 +1,44 @@
+name = "mama-bot"
+main = "src/index.ts"
+compatibility_date = "2026-08-01"
+workers_dev = true
+
+[vars]
+MOTHER_NAME = "Mama"
+MOTHER_TIMEZONE = "Europe/Berlin"
+MOTHER_LOCALE = "de-DE"
+MORNING_HOUR = "8"
+MORNING_MINUTE = "0"
+MORNING_VARIANCE_MINUTES = "10"
+AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast"
+WHATSAPP_API_VERSION = "v23.0"
+MAX_REPLY_CHARS = "2800"
+
+[triggers]
+crons = ["*/5 * * * *"]
+
+[ai]
+binding = "AI"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "mama-bot-db"
+database_id = "e2ddcba4-6969-4872-b538-75bdb3ae0b10"
+migrations_dir = "migrations"
+
+[[queues.producers]]
+binding = "INBOUND_QUEUE"
+queue = "mama-bot-inbound"
+
+[[queues.consumers]]
+queue = "mama-bot-inbound"
+max_batch_size = 5
+max_batch_timeout = 5
+max_retries = 5
+
+# Production secrets are configured with:
+# wrangler secret put WHATSAPP_TOKEN
+# wrangler secret put WHATSAPP_PHONE_NUMBER_ID
+# wrangler secret put WHATSAPP_VERIFY_TOKEN
+# wrangler secret put META_APP_SECRET
+# wrangler secret put MOTHER_PHONE
