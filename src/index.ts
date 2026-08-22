@@ -10,7 +10,13 @@ export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
     if (url.pathname === '/health' && request.method === 'GET') {
-      return json({ ok: true, service: 'mama-bot' })
+      const status = configurationStatus(env)
+      return json({
+        ok: true,
+        service: 'mama-bot',
+        configured: status.ok,
+        missing: status.ok ? [] : (status.missing ?? []),
+      })
     }
     if (url.pathname === '/webhook' || url.pathname === '/api/whatsapp') {
       return handleWebhook(request, env)
