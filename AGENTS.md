@@ -1,8 +1,8 @@
 # AGENTS.md — mama-bot
 
 > **Operating mode for this repo.** Read this before touching anything. The
-> bot runs on Cloudflare Free Tier (D1 + Queue + Workers AI + Cron) with zero
-> runtime cost; do not "improve" it by adding paid services, servers, or
+> bot runs on Cloudflare Free Tier (D1 + Queue + Workers AI / Groq + Cron) with
+> zero runtime cost; do not "improve" it by adding paid services, servers, or
 > background daemons. Everything is in **one TypeScript Worker** at `src/`.
 
 ---
@@ -20,9 +20,11 @@
   `max_retries=5`, `max_batch_timeout=5`. Same queue is reused for both
   inbound processing and outbox delivery (different `kind` discriminator in
   `QueueMessage`).
-- **AI:** Workers AI binding `AI`, model `AI_MODEL` (default
-  `@cf/meta/llama-3.1-8b-instruct-fp8-fast`). **Optional** — `generateReply`
-  falls back to `fallbackReply()` when `env.AI` is missing.
+- **AI:** Workers AI binding `AI` (model `AI_MODEL`) **or** Groq binding
+  (`GROQ_API_KEY` / `GROQ_MODEL`). **Optional** — `generateReply` falls back to
+  `fallbackReply()` when `env.AI` / `env.GROQ_API_KEY` is missing.
+- **Channel:** `CHANNEL` env var (`meta` | `callmebot`) switches the inbound/outbound
+  transport layer. Default: `meta`.
 - **Types / env:** `worker-configuration.d.ts` defines `Env`. Hand-edited, do
   not regenerate.
 
@@ -36,8 +38,8 @@ npm run dev         # wrangler dev (local worker)
 npm run db:local    # apply migrations to local D1
 npm run db:remote   # apply migrations to remote D1
 npm run queue:create # npx wrangler queues create mama-bot-inbound
-./deploy.sh          # full pipeline: login check → queue → D1 → migrations
-                     #   → secrets from secrets.env → check → deploy
+./deploy.sh           # full pipeline: login check → queue → D1 → migrations
+                      #   → secrets from secrets.env → check → deploy
 ./deploy.sh secrets  # only push secrets from secrets.env (interactive via wrangler)
 ./deploy.sh --no-check  # skip typecheck/tests (use sparingly)
 ```
@@ -50,6 +52,10 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
 - Migrations are applied **idempotently** by `wrangler d1 migrations apply`;
   editing `0001_initial.sql` after it's been applied is a no-op. New schema
   changes need a new `0002_*.sql` file.
+- **Groq API key**: `GROQ_API_KEY` must be set as a Cloudflare secret for the
+  Groq provider to work. Add via `npx wrangler secret put GROQ_API_KEY`. The key
+  itself must **never** be committed — it belongs in Cloudflare secrets or
+  `secrets.env` (see §7).
 
 ---
 
@@ -62,9 +68,9 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
   `401 Invalid signature` if `verifyMetaSignature` fails. Never bypass it,
   even in "dev mode". `test/signature.test.ts` covers the matrix.
 - **Deduplication is via D1, not in-memory.** `markInbound` (`src/db.ts:52`)
-  - `claimInbound` (`src/db.ts:101`) use the `inbound_events` row as a
-    per-`whatsapp_id` lease. Meta retries are idempotent because of this — do
-    not "simplify" by removing the table.
+  + `claimInbound` (`src/db.ts:101`) use the `inbound_events` row as a
+  per-`whatsapp_id` lease. Meta retries are idempotent because of this — do
+  not "simplify" by removing the table.
 - **Outbox is at-least-once with bounded retries.** `claimOutbox`
   (`src/db.ts:170`) caps `attempts < 5`, sets `next_attempt_at` to +15 min on
   claim and exponential `MIN(60, 2*(attempts+1))` min on failure, and marks
@@ -73,6 +79,9 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
 - **Safety prefixes override AI tone.** `safetyPrefix` in `src/lib/commands.ts`
   prepends a "ruf 112" message for emergency keywords before any AI reply. It
   runs even when the AI model is bypassed. Don't reorder it past `generateReply`.
+- **Channel switching.** `CHANNEL` env var (`meta` | `callmebot`) controls the
+  inbound/outbound transport. Default: `meta`. Changing this Env Var is the
+  only code change needed — no redeploy required beyond re‑deployment of secrets.
 
 ---
 
@@ -94,11 +103,15 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
 - **Atomic-ish writes.** D1 is single-statement per `prepare()`; multi-table
   updates use `DB.batch([...])` (`src/db.ts:68`, `:196`). Preserve this — do
   not split into sequential awaits.
-- **Secrets come from `secrets.env`, never from `.env` files.** `deploy.sh`
-  reads `secrets.env` and pushes with `wrangler secret put`. The set is fixed
-  in `deploy.sh:88` (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
-  `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`). Adding a new
-  secret means updating this list.
+- **Secrets come from `secrets.env` / Cloudflare secrets, never from `.env` files.**
+  `deploy.sh` reads `secrets.env` and pushes with `wrangler secret put`. The
+  set is fixed in `deploy.sh:88` (`WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`,
+  `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`, `GROQ_API_KEY`,
+  `CALLMEBOT_API_KEY`). Adding a new secret means updating this list in
+  `deploy.sh`.
+- **Morning daily flag.** `MORNING_DAILY` env var (`true` | `false`, default
+  `false`). When `true`, the morning greeting is sent every day regardless of
+  whether Mama wrote in the last 24 hours (may incur small Meta service fees).
 
 ---
 
@@ -109,9 +122,9 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
 - `processor.ts:34` calls `recentMessages(phone)` even for STOP/START — it
   just isn't used. Don't optimize this away; the call is cheap and ordering
   matters for future personalization.
-- `generateReply` returns `provider: 'fallback'` when `env.AI` is missing or
-  AI throws — not an error. Test/contract consumers should check `provider`,
-  not the absence of an exception.
+- `generateReply` / `generateReplyGroq` returns `provider: 'fallback'` / `'groq'`
+  when `env.AI` / `env.GROQ_API_KEY` is missing or AI throws — not an error.
+  Test/contract consumers should check `provider`, not the absence of an exception.
 - `claimInbound` re-leases a row that has been `processing` for >15 minutes
   (`src/db.ts:106`). That is the dead-worker recovery — leave the window
   alone unless you measure stalls.
@@ -129,6 +142,8 @@ or `ai`. When you change:
 - `src/lib/signature.ts` → must update `test/signature.test.ts`
 - `src/lib/commands.ts` → must update `test/commands.test.ts`
 - `src/lib/time.ts` → must update `test/time.test.ts`
+- `src/lib/ai.ts` / `src/lib/ai.groq.ts` → no test changes needed, but
+  review logic if you modify the provider switch
 - anything that touches the queue boundary, outbox, or HMAC flow → add a
   test. The CI gate is `npm run check`, not a custom suite.
 
@@ -141,6 +156,8 @@ or `ai`. When you change:
   tokens, or local SQLite files. `.gitignore` covers them — keep it that way.
 - Prettier config is `.prettierrc` (default-ish, 2-space, semicolons, double
   quotes). `npm run format` rewrites; `format:check` only validates.
+- **Groq key:** Never commit `GROQ_API_KEY` or `CALLMEBOT_API_KEY`. These are
+  Cloudflare secrets only.
 
 ---
 
@@ -152,3 +169,6 @@ or `ai`. When you change:
   free tier; don't add paid bindings.
 - Multi-tenant support — the entire architecture assumes exactly one user
   (Mama) and one phone number.
+- **Groq model switching.** To switch models, change `GROQ_MODEL` in
+  `wrangler.toml` or set `GROQ_MODEL` env var. Available models include
+  `qwen/qwen3.8-27b`, `qwen/qwen3.6-27b`, `openai/gpt-oss-120b`, etc.
