@@ -53,7 +53,7 @@ export async function generateReply(
   history: RecentMessage[]
 ): Promise<AiResult> {
   const fallback = fallbackReply(input, name)
-  const provider = (env.AI_PROVIDER || 'workers') as string
+  const provider = (env.AI_PROVIDER || (env.GROQ_API_KEY ? 'groq' : 'workers')) as string
   const systemPrompt = buildSystemPrompt(name)
 
   if (provider === 'groq') {
