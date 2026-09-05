@@ -15,7 +15,7 @@ export default {
         ok: true,
         service: 'mama-bot',
         configured: status.ok,
-        missing: status.ok ? [] : (status.missing ?? []),
+        missing: status.ok ? [] : (status.missing ?? [])
       })
     }
     if (url.pathname === '/webhook' || url.pathname === '/api/whatsapp') {

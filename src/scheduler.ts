@@ -1,5 +1,5 @@
 import { MORNING_MESSAGES } from './config/topics'
-import { dueOutbox, enqueueOutbox, ensureUser, getState, setState, touchOutbox } from './db'
+import { dueOutbox, enqueueOutbox, ensureUser, getState, setState } from './db'
 import { hashString, localTime, morningOffsetMinutes, withinLastHours } from './lib/time'
 
 export async function runScheduled(env: Env, now = new Date()): Promise<void> {
@@ -21,7 +21,9 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
   }
 
   const user = await ensureUser(env, env.MOTHER_PHONE)
-  if (!user.proactiveEnabled || !withinLastHours(user.lastInboundAt, 24, now.getTime())) return
+  if (!user.proactiveEnabled) return
+  const morningDaily = env.MORNING_DAILY === 'true'
+  if (!morningDaily && !withinLastHours(user.lastInboundAt, 24, now.getTime())) return
 
   const clock = localTime(now, user.timezone)
   const hour = Number(env.MORNING_HOUR || 8)
@@ -56,4 +58,13 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
       error instanceof Error ? error.message : 'unknown error'
     )
   }
+}
+
+async function touchOutbox(env: Env, id: number): Promise<void> {
+  await env.DB.prepare(
+    `UPDATE outbox SET next_attempt_at = datetime('now', '+1 minute')
+     WHERE id = ? AND status IN ('pending', 'failed')`
+  )
+    .bind(id)
+    .run()
 }

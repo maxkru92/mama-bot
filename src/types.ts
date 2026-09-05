@@ -67,5 +67,5 @@ export interface MorningCandidate {
 
 export interface AiResult {
   text: string
-  provider: 'workers-ai' | 'fallback'
+  provider: 'workers-ai' | 'groq' | 'fallback'
 }

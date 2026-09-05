@@ -1,6 +1,6 @@
 import { generateReply } from './lib/ai'
 import { commandFor, helpText, safetyPrefix } from './lib/commands'
-import { sendWhatsAppText } from './lib/whatsapp'
+import { getChannel } from './lib/channel'
 import {
   claimInbound,
   claimOutbox,
@@ -56,10 +56,11 @@ export async function deliverOutbox(env: Env, id: number): Promise<void> {
   const claimed = await claimOutbox(env, id)
   if (!claimed) return
   try {
-    const providerId = await sendWhatsAppText(env, claimed.phone, claimed.body)
+    const channel = getChannel(env)
+    const providerId = await channel.sendText(env, claimed.phone, claimed.body)
     await markOutboxSent(env, claimed.id, providerId, claimed.phone, claimed.body)
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown WhatsApp error'
+    const message = error instanceof Error ? error.message : 'Unknown error'
     await markOutboxFailed(env, claimed.id, message)
     throw error
   }

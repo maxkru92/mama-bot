@@ -16,4 +16,10 @@ interface Env {
   WHATSAPP_VERIFY_TOKEN: string
   META_APP_SECRET: string
   MOTHER_PHONE: string
+  AI_PROVIDER: string
+  GROQ_API_KEY: string
+  GROQ_MODEL: string
+  CHANNEL: string
+  MORNING_DAILY: string
+  CALLMEBOT_API_KEY: string
 }

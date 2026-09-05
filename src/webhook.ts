@@ -1,71 +1,24 @@
 import { ensureUser, markInbound, markInboundQueued, pendingInbound } from './db'
 import { recipientIsConfigured } from './processor'
-import { verifyMetaSignature } from './lib/signature'
-import type {
-  IncomingMessage,
-  MetaIncomingMessage,
-  MetaWebhookPayload,
-  QueueMessage
-} from './types'
-
-export function verifyRequest(request: Request, env: Env): Response {
-  const url = new URL(request.url)
-  const mode = url.searchParams.get('hub.mode')
-  const token = url.searchParams.get('hub.verify_token')
-  const challenge = url.searchParams.get('hub.challenge')
-  if (mode === 'subscribe' && token === env.WHATSAPP_VERIFY_TOKEN && challenge) {
-    return new Response(challenge, { status: 200 })
-  }
-  return new Response('Forbidden', { status: 403 })
-}
-
-function extractMessages(payload: MetaWebhookPayload): IncomingMessage[] {
-  const messages: IncomingMessage[] = []
-  for (const entry of payload.entry ?? []) {
-    for (const change of entry.changes ?? []) {
-      for (const message of change.value?.messages ?? []) {
-        const normalized = normalizeMessage(message)
-        if (normalized) messages.push(normalized)
-      }
-    }
-  }
-  return messages
-}
-
-function normalizeMessage(message: MetaIncomingMessage): IncomingMessage | null {
-  if (message.type !== 'text' || !message.id || !message.from || !message.text?.body) return null
-  return {
-    id: message.id,
-    phone: message.from,
-    text: message.text.body.trim(),
-    timestamp: message.timestamp
-      ? new Date(Number(message.timestamp) * 1000).toISOString()
-      : new Date().toISOString()
-  }
-}
+import { getChannel } from './lib/channel'
+import type { IncomingMessage, QueueMessage } from './types'
 
 export async function handleWebhook(request: Request, env: Env): Promise<Response> {
-  if (request.method === 'GET') return verifyRequest(request, env)
+  const channel = getChannel(env)
+
+  if (request.method === 'GET') {
+    const response = channel.verifyGet(request, env)
+    if (response) return response
+    return new Response('Not found', { status: 404 })
+  }
   if (request.method !== 'POST') return new Response('Method not allowed', { status: 405 })
-  if (!env.META_APP_SECRET) return new Response('Webhook secret is not configured', { status: 503 })
 
   const body = await request.arrayBuffer()
-  const valid = await verifyMetaSignature(
-    body,
-    request.headers.get('x-hub-signature-256'),
-    env.META_APP_SECRET
-  )
-  if (!valid) return new Response('Invalid signature', { status: 401 })
-
-  let payload: MetaWebhookPayload
-  try {
-    payload = JSON.parse(new TextDecoder().decode(body)) as MetaWebhookPayload
-  } catch {
-    return new Response('Invalid JSON', { status: 400 })
-  }
+  const verification = channel.verifyPost(request, body, env)
+  if (verification) return verification
 
   const pending: Array<{ message: IncomingMessage; queue: QueueMessage }> = []
-  for (const message of extractMessages(payload)) {
+  for (const message of channel.extractMessages(body)) {
     if (!(await recipientIsConfigured(env, message.phone))) continue
     if (!(await markInbound(env, message))) continue
     pending.push({

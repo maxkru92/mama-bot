@@ -62,9 +62,9 @@ npm run queue:create # npx wrangler queues create mama-bot-inbound
   `401 Invalid signature` if `verifyMetaSignature` fails. Never bypass it,
   even in "dev mode". `test/signature.test.ts` covers the matrix.
 - **Deduplication is via D1, not in-memory.** `markInbound` (`src/db.ts:52`)
-  + `claimInbound` (`src/db.ts:101`) use the `inbound_events` row as a
-  per-`whatsapp_id` lease. Meta retries are idempotent because of this — do
-  not "simplify" by removing the table.
+  - `claimInbound` (`src/db.ts:101`) use the `inbound_events` row as a
+    per-`whatsapp_id` lease. Meta retries are idempotent because of this — do
+    not "simplify" by removing the table.
 - **Outbox is at-least-once with bounded retries.** `claimOutbox`
   (`src/db.ts:170`) caps `attempts < 5`, sets `next_attempt_at` to +15 min on
   claim and exponential `MIN(60, 2*(attempts+1))` min on failure, and marks

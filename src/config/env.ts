@@ -16,6 +16,9 @@ export function configurationStatus(env: Env): {
   aiConfigured: boolean
   d1Configured: boolean
   queueConfigured: boolean
+  groqConfigured: boolean
+  channel: string
+  morningDaily: boolean
 } {
   const missing = missingConfiguration(env)
   return {
@@ -23,6 +26,9 @@ export function configurationStatus(env: Env): {
     missing,
     aiConfigured: Boolean(env.AI),
     d1Configured: Boolean(env.DB),
-    queueConfigured: Boolean(env.INBOUND_QUEUE)
+    queueConfigured: Boolean(env.INBOUND_QUEUE),
+    groqConfigured: Boolean(env.GROQ_API_KEY),
+    channel: (env.CHANNEL as string) || 'meta',
+    morningDaily: env.MORNING_DAILY === 'true'
   }
 }

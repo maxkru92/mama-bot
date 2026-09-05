@@ -13,6 +13,9 @@ MORNING_VARIANCE_MINUTES = "10"
 AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast"
 WHATSAPP_API_VERSION = "v23.0"
 MAX_REPLY_CHARS = "2800"
+GROQ_MODEL = "qwen/qwen3.8-27b"
+CHANNEL = "meta"
+MORNING_DAILY = "false"
 
 [triggers]
 crons = ["*/5 * * * *"]
