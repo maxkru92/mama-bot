@@ -21,7 +21,7 @@ Dieses Dokument richtet sich an KI-Agenten (Codebuff, Kilo, Cursor etc.), die in
 
 ## Konfiguration (wrangler.toml)
 
-WICHTIG: Alle Konfiguration erfolgt über `wrangler.toml` `[vars]`. Secrets werden *nicht* für Konfigurationswerte verwendet.
+WICHTIG: Alle Konfiguration erfolgt über `wrangler.toml` `[vars]`. Secrets werden _nicht_ für Konfigurationswerte verwendet.
 
 - `MOTHER_NAME` — Name der Begleiterin (Default: Sabine)
 - `MOTHER_TIMEZONE`, `MOTHER_LOCALE` — Zeitzone/-locale für Morgen-Gruess
@@ -35,6 +35,7 @@ WICHTIG: Alle Konfiguration erfolgt über `wrangler.toml` `[vars]`. Secrets werd
 - `MAX_REPLY_CHARS` — Max. Antwortlänge (Default: 2800)
 
 Secrets (werden via `wrangler secret put` gesetzt):
+
 - `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`, `GROQ_API_KEY`, `CALLMEBOT_API_KEY`
 
 ## Secrets setzen

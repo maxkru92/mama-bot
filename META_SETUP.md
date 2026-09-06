@@ -93,10 +93,10 @@ Standardmäßig nutzt der Bot **Groq** (schnell, günstig, API-Key reicht). Fall
 Groq nicht nutzen willst, stelle in `wrangler.toml` `AI_PROVIDER = "workers-ai"`
 und entferne `GROQ_API_KEY`/`GROQ_MODEL` aus `secrets.env`.
 
-| Anbieter           | Voraussetzung                | Vorteil                        |
-| ------------------ | ---------------------------- | ----------------------------- |
-| **Groq** (Standard)| `GROQ_API_KEY` in secrets.env| Schnell, kostenlos bedienbar   |
-| **Workers AI**     | `AI_PROVIDER=workers-ai`     | Keine externen Keys nötig      |
+| Anbieter            | Voraussetzung                 | Vorteil                      |
+| ------------------- | ----------------------------- | ---------------------------- |
+| **Groq** (Standard) | `GROQ_API_KEY` in secrets.env | Schnell, kostenlos bedienbar |
+| **Workers AI**      | `AI_PROVIDER=workers-ai`      | Keine externen Keys nötig    |
 
 ## 10. Testen
 

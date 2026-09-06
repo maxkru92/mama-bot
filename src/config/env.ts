@@ -1,15 +1,20 @@
-const requiredSecrets = [
+const META_SECRETS = [
   'WHATSAPP_TOKEN',
   'WHATSAPP_PHONE_NUMBER_ID',
   'WHATSAPP_VERIFY_TOKEN',
-  'META_APP_SECRET',
-  'MOTHER_PHONE',
-  'GROQ_API_KEY',
-  'CALLMEBOT_API_KEY'
+  'META_APP_SECRET'
 ] as const
+const CALLMEBOT_SECRETS = ['CALLMEBOT_API_KEY'] as const
 
 export function missingConfiguration(env: Env): string[] {
-  return requiredSecrets.filter((key) => !env[key]?.trim())
+  const channel = (env.CHANNEL || 'meta').toLowerCase()
+  const channelSecrets = channel === 'callmebot' ? CALLMEBOT_SECRETS : META_SECRETS
+  const baseSecrets = ['MOTHER_PHONE', 'GROQ_API_KEY']
+  const requiredSecrets = [...baseSecrets, ...channelSecrets]
+  return requiredSecrets.filter((key) => {
+    const value = env[key as keyof Env]
+    return typeof value !== 'string' || !value.trim()
+  })
 }
 
 export function configurationStatus(env: Env): {

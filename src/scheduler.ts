@@ -21,7 +21,14 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
   }
 
   const user = await ensureUser(env, env.MOTHER_PHONE)
-  if (!user.proactiveEnabled || !withinLastHours(user.lastInboundAt, 24, now.getTime())) return
+  // CallMeBot hat keinen Webhook → eingehende Nachrichten unmöglich.
+  // Daher den 24h-Aktivitätscheck nur bei Meta (interaktiver Kanal) erzwingen.
+  const channel = (env.CHANNEL || 'meta').toLowerCase()
+  if (
+    channel === 'meta' &&
+    (!user.proactiveEnabled || !withinLastHours(user.lastInboundAt, 24, now.getTime()))
+  )
+    return
 
   const clock = localTime(now, user.timezone)
   const hour = Number(env.MORNING_HOUR || 8)
