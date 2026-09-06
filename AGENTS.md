@@ -1,7 +1,5 @@
 # Mama Bot — Agenten-Entwicklung
 
-Dieses Dokument richtet sich an KI-Agenten (Codebuff, Kilo, Cursor etc.), die in diesem Repository arbeiten.
-
 ## Projekt-Layout
 
 - `src/index.ts` — Cloudflare Worker Entry (fetch / scheduled / queue)
@@ -33,6 +31,9 @@ WICHTIG: Alle Konfiguration erfolgt über `wrangler.toml` `[vars]`. Secrets werd
 - `CHANNEL` — `"meta"` (Default, Meta Cloud API) oder `"callmebot"` (CallMeBot)
 - `WHATSAPP_API_VERSION` — Meta API Version (Default: v23.0)
 - `MAX_REPLY_CHARS` — Max. Antwortlänge (Default: 2800)
+- `CLAIM_TIMEOUT_MINUTES` — Max. Alter einer processing-Inbound vor Reclaim (Default: 15)
+- `MAX_RECENT_MESSAGES` — Max. Anzahl Nachrichten im KI-Kontext (Default: 10, max 30)
+- `MAX_OUTBOX_ATTEMPTS` — Max. Zustellversuche pro Outbox-Eintrag (Default: 5)
 
 Secrets (werden via `wrangler secret put` gesetzt):
 - `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`, `GROQ_API_KEY`, `CALLMEBOT_API_KEY`
@@ -50,9 +51,10 @@ cp secrets.env.example secrets.env
 
 ```bash
 npm install
-npm run typecheck     # tsc --noEmit
-npm test               # Vitest-Tests (webhook, signature, commands, time)
-npx wrangler dev       # Lokaler Cloudflare Dev-Server (miniflare)
+npm run check           # format:check -> typecheck -> test
+npm run typecheck       # tsc --noEmit
+npm test                # Vitest-Tests (webhook, signature, commands, time)
+npx wrangler dev        # Lokaler Cloudflare Dev-Server (miniflare)
 ```
 
 Lokaler Test-Server erfordert `secrets.env` mit mindestens leeren Werten für die env-Vars.
@@ -68,16 +70,17 @@ Lokaler Test-Server erfordert `secrets.env` mit mindestens leeren Werten für di
 
 - **Provider-Kette**: Bei `AI_PROVIDER=groq` wird zuerst Groq API (`callGroq`) aufgerufen. Bei Fehler oder wenn kein `GROQ_API_KEY` gesetzt ist, fall back auf Cloudflare Workers AI (`env.AI.run`). Final Fallback auf regelbasierten Fallback-Reply.
 - **Kanal-Dispatch**: `sendWhatsappMessage` dispatcht basierend auf `CHANNEL` auf CallMeBot (einfach, gratis, keine Meta-Token nötig) oder Meta Cloud API.
-- **Message-Id**: CallMeBot liefert keine echte Message-Id; es wird eine deterministische Pseudo-Id `callmebot-{timestamp}` verwendet für Outbox-Tracking.
+- **Message-Id**: CallMeBot liefert keine echte Message-Id; es wird eine deterministische Pseudo-ID `callmebot-{timestamp}` verwendet für Outbox-Tracking.
 - **Rechtlicher Hinweis**: System-Prompt enthält explizite Hinweise zu Notfallsituationen (112, 110, Giftnotruf 030 19240) und rechtlichen Grenzen (keine Beratung).
 - **MORNING_DAILY**: Täglicher Morgen-Gruess kann mit `MORNING_DAILY=false` deaktiviert werden, ohne den Scheduler zu deaktivieren.
+- **Queue-Consumer**: `message.ack()` wird VOR `processInbound`/`processOutbox` aufgerufen. Crash nach Ack = keine Redelivery. Outbox-Dedupe-Keys verhindern Duplikate.
+- **Health-Check**: `/health/config` prüft echte DB-Erreichbarkeit (`SELECT 1`) und Queue-Binding, nicht nur Env-Vars.
 
 ## Änderungen vornehmen
 
 1. Code ändern
-2. `npm run typecheck` lokal bestehen lassen
-3. `npm test` lokal bestehen lassen
-4. Push — CI prüft Typecheck + Tests automatisch
+2. `npm run check` lokal bestehen lassen (`format:check && typecheck && test`)
+3. Push — CI prüft Typecheck + Tests automatisch (falls konfiguriert)
 
 ## Code-Stil
 
@@ -85,3 +88,10 @@ Lokaler Test-Server erfordert `secrets.env` mit mindestens leeren Werten für di
 - Keine zusätzlichen Dependencies ohne Notwendigkeit
 - Kleine, fokussierte Commits mit beschreibenden Messages
 - Secrets niemals im Repo committen (nur `secrets.env.example` mit leeren Werten)
+- `src/lib/logger.ts` enthält minimalen structured-log Wrapper (`logError`); neue Fehlerlogs damit formatieren
+
+## Wichtige Dateien für schnelle Orientierung
+
+- `src/config/env.ts` — Alle konfigurierbaren Grenzen und Defaults
+- `src/db.ts` — Zentrale Datenbank-Logik (D1), enthält claim/enqueue/due-Logik
+- `deploy.sh` — Infrastruktur-Automatik (erstellt D1/Queue falls fehlend)
