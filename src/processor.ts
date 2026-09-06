@@ -70,6 +70,7 @@ export async function processOutbox(env: Env, id: number): Promise<void> {
 }
 
 export async function recipientIsConfigured(env: Env, phone: string): Promise<boolean> {
-  const configured = env.MOTHER_PHONE?.replace(/^\+/, '').trim()
-  return Boolean(configured) && phone.replace(/^\+/, '') === configured
+  const configured = env.MOTHER_PHONE?.replace(/[^\d]/g, '').trim()
+  const normalizedPhone = phone.replace(/[^\d]/g, '').trim()
+  return Boolean(configured) && normalizedPhone === configured
 }

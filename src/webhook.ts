@@ -69,8 +69,14 @@ export async function handleWebhook(request: Request, env: Env): Promise<Respons
 
   const pending: Array<{ message: IncomingMessage; queue: QueueMessage }> = []
   for (const message of extractMessages(payload)) {
-    if (!(await recipientIsConfigured(env, message.phone))) continue
-    if (!(await markInbound(env, message))) continue
+    if (!(await recipientIsConfigured(env, message.phone))) {
+      logError('recipient not configured', new Error('recipient mismatch'), { phone: message.phone })
+      continue
+    }
+    if (!(await markInbound(env, message))) {
+      logError('inbound duplicate or invalid state', new Error('markInbound returned false'), { messageId: message.id, phone: message.phone })
+      continue
+    }
     pending.push({
       message,
       queue: { kind: 'inbound', messageId: message.id, phone: message.phone, text: message.text }
