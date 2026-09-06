@@ -18,7 +18,7 @@
     "check": "npm run format:check && npm run typecheck && npm test"
   },
   "devDependencies": {
-    "@cloudflare/vitest-pool-workers": "^0.20.3",
+    "@cloudflare/vitest-pool-workers": "^0.22.0",
     "@cloudflare/workers-types": "^5.20260810.1",
     "prettier": "^3.9.6",
     "typescript": "^7.0.2",
