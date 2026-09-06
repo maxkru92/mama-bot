@@ -73,7 +73,7 @@ Lokaler Test-Server erfordert `secrets.env` mit mindestens leeren Werten für di
 - **Message-Id**: CallMeBot liefert keine echte Message-Id; es wird eine deterministische Pseudo-ID `callmebot-{timestamp}` verwendet für Outbox-Tracking.
 - **Rechtlicher Hinweis**: System-Prompt enthält explizite Hinweise zu Notfallsituationen (112, 110, Giftnotruf 030 19240) und rechtlichen Grenzen (keine Beratung).
 - **MORNING_DAILY**: Täglicher Morgen-Gruess kann mit `MORNING_DAILY=false` deaktiviert werden, ohne den Scheduler zu deaktivieren.
-- **Queue-Consumer**: `message.ack()` wird VOR `processInbound`/`processOutbox` aufgerufen. Crash nach Ack = keine Redelivery. Outbox-Dedupe-Keys verhindern Duplikate.
+- **Queue-Consumer**: `message.ack()` wird NACH erfolgreicher `processInbound`/`processOutbox` aufgerufen. Bei Fehler `message.retry()`. Outbox-Dedupe-Keys verhindern Duplikate bei Redelivery.
 - **Health-Check**: `/health/config` prüft echte DB-Erreichbarkeit (`SELECT 1`) und Queue-Binding, nicht nur Env-Vars.
 
 ## Änderungen vornehmen
