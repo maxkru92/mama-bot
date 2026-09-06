@@ -3,7 +3,9 @@ const requiredSecrets = [
   'WHATSAPP_PHONE_NUMBER_ID',
   'WHATSAPP_VERIFY_TOKEN',
   'META_APP_SECRET',
-  'MOTHER_PHONE'
+  'MOTHER_PHONE',
+  'GROQ_API_KEY',
+  'CALLMEBOT_API_KEY'
 ] as const
 
 export function missingConfiguration(env: Env): string[] {

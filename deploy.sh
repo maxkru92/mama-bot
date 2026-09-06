@@ -86,7 +86,7 @@ set_secrets() {
     key=$(printf '%s' "$key" | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
     value=$(printf '%s' "$value" | sed -e 's/\r$//' -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
     case "$key" in
-      WHATSAPP_TOKEN | WHATSAPP_PHONE_NUMBER_ID | WHATSAPP_VERIFY_TOKEN | META_APP_SECRET | MOTHER_PHONE)
+      WHATSAPP_TOKEN | WHATSAPP_PHONE_NUMBER_ID | WHATSAPP_VERIFY_TOKEN | META_APP_SECRET | MOTHER_PHONE | GROQ_API_KEY | CALLMEBOT_API_KEY)
         if [ -n "$value" ]; then
           yellow "Setze Secret $key ..."
           printf '%s' "$value" | npx wrangler secret put "$key" --name "$WORKER_NAME" >/dev/null

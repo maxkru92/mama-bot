@@ -36,6 +36,9 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
 
   const stateKey = `morning:${clock.dateKey}`
   if (await getState(env, stateKey)) return
+  // MORNING_DAILY=false deaktiviert den taeglichen Morgen-Gruess (Default: an)
+  if ((env.MORNING_DAILY || 'true').toLowerCase() === 'false') return
+
   const index = Math.abs(hashString(clock.dateKey)) % MORNING_MESSAGES.length
   const message = MORNING_MESSAGES[index]
   const outboxId = await enqueueOutbox(env, user.phone, message.text, 'morning', stateKey)

@@ -4,13 +4,17 @@ compatibility_date = "2026-08-01"
 workers_dev = true
 
 [vars]
-MOTHER_NAME = "Mama"
+MOTHER_NAME = "Sabine"
 MOTHER_TIMEZONE = "Europe/Berlin"
 MOTHER_LOCALE = "de-DE"
 MORNING_HOUR = "8"
 MORNING_MINUTE = "0"
 MORNING_VARIANCE_MINUTES = "10"
+MORNING_DAILY = "true"
 AI_MODEL = "@cf/meta/llama-3.1-8b-instruct-fp8-fast"
+AI_PROVIDER = "groq"
+GROQ_MODEL = "qwen/qwen3.8-27b"
+CHANNEL = "callmebot"
 WHATSAPP_API_VERSION = "v23.0"
 MAX_REPLY_CHARS = "2800"
 
