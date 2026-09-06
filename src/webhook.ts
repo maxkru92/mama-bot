@@ -1,6 +1,7 @@
 import { ensureUser, markInbound, markInboundQueued, pendingInbound } from './db'
 import { recipientIsConfigured } from './processor'
 import { verifyMetaSignature } from './lib/signature'
+import { logError } from './lib/logger'
 import type {
   IncomingMessage,
   MetaIncomingMessage,
@@ -61,6 +62,8 @@ export async function handleWebhook(request: Request, env: Env): Promise<Respons
   try {
     payload = JSON.parse(new TextDecoder().decode(body)) as MetaWebhookPayload
   } catch {
+    const snippet = new TextDecoder().decode(body.slice(0, 200))
+    logError('Invalid JSON payload', new Error('JSON parse failed'), { snippet, length: body.byteLength })
     return new Response('Invalid JSON', { status: 400 })
   }
 
@@ -82,10 +85,7 @@ export async function handleWebhook(request: Request, env: Env): Promise<Respons
       }
       await Promise.all(pending.map((entry) => markInboundQueued(env, entry.message.id)))
     } catch (error) {
-      console.error(
-        'inbound queue publish failed',
-        error instanceof Error ? error.message : 'unknown error'
-      )
+      logError('inbound queue publish failed', error)
       return new Response('Queue unavailable', { status: 503 })
     }
   }

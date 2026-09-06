@@ -8,6 +8,18 @@ const requiredSecrets = [
   'CALLMEBOT_API_KEY'
 ] as const
 
+export function getClaimTimeoutMinutes(env: Env): number {
+  return Number(env.CLAIM_TIMEOUT_MINUTES) || 15
+}
+
+export function getMaxRecentMessages(env: Env): number {
+  return Math.min(Math.max(Number(env.MAX_RECENT_MESSAGES) || 10, 1), 30)
+}
+
+export function getMaxOutboxAttempts(env: Env): number {
+  return Number(env.MAX_OUTBOX_ATTEMPTS) || 5
+}
+
 export function missingConfiguration(env: Env): string[] {
   return requiredSecrets.filter((key) => !env[key]?.trim())
 }

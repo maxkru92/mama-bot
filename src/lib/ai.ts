@@ -1,5 +1,6 @@
 import { topicContext } from '../config/topics'
 import { fallbackReply } from './fallback'
+import { logError } from './logger'
 import type { AiResult, RecentMessage } from '../types'
 
 function cleanReply(value: string, maxChars: number): string {
@@ -28,6 +29,8 @@ export async function generateReply(
   name: string,
   history: RecentMessage[]
 ): Promise<AiResult> {
+  const maxInput = 2000
+  const trimmedInput = input.length > maxInput ? input.slice(0, maxInput) : input
   const fallback = fallbackReply(input, name)
 
   const recent = history
@@ -35,7 +38,7 @@ export async function generateReply(
     .map((message) => `${message.direction === 'inbound' ? 'Mama' : 'Bot'}: ${message.body}`)
     .join('\n')
   const prompt = [
-    `Neue Nachricht von ${name}: ${input}`,
+    `Neue Nachricht von ${name}: ${trimmedInput}`,
     'Bisheriger Gesprächsausschnitt:',
     recent || '(noch kein Verlauf)',
     'Themenwissen:',
@@ -50,10 +53,7 @@ export async function generateReply(
       const groqText = await callGroq(env, prompt)
       if (groqText) return { text: groqText, provider: 'groq' }
     } catch (error) {
-      console.error(
-        'Groq generation failed',
-        error instanceof Error ? error.message : 'unknown error'
-      )
+      logError('Groq generation failed', error)
       // weiter zu workers-ai/fallback
     }
   }
@@ -74,7 +74,7 @@ export async function generateReply(
     )
     return text ? { text, provider: 'workers-ai' } : { text: fallback, provider: 'fallback' }
   } catch (error) {
-    console.error('AI generation failed', error instanceof Error ? error.message : 'unknown error')
+    logError('AI generation failed', error)
     return { text: fallback, provider: 'fallback' }
   }
 }
@@ -94,10 +94,11 @@ async function callGroq(env: Env, prompt: string): Promise<string | null> {
       ],
       max_tokens: 500,
       temperature: 0.7
-    })
+    }),
+    signal: AbortSignal.timeout(10_000)
   })
   if (!response.ok) {
-    console.error(`Groq API error (${response.status})`)
+    logError('Groq API error', new Error(`HTTP ${response.status}`))
     return null
   }
   const payload = (await response.json().catch(() => ({}))) as {

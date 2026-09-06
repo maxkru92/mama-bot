@@ -1,4 +1,5 @@
 import type { IncomingMessage, RecentMessage, UserProfile } from './types'
+import { getClaimTimeoutMinutes, getMaxOutboxAttempts, getMaxRecentMessages } from './config/env'
 
 const now = (): string => new Date().toISOString()
 
@@ -101,10 +102,10 @@ export async function markInboundQueued(env: Env, messageId: string): Promise<vo
 export async function claimInbound(env: Env, messageId: string): Promise<boolean> {
   const result = await env.DB.prepare(
     `UPDATE inbound_events SET status = 'processing', processing_at = ?
-     WHERE whatsapp_id = ? AND (
-       status IN ('queueing', 'queued', 'pending') OR
-       (status = 'processing' AND processing_at <= datetime('now', '-15 minutes'))
-     )
+      WHERE whatsapp_id = ? AND (
+        status IN ('queueing', 'queued', 'pending') OR
+        (status = 'processing' AND processing_at <= datetime('now', '-${getClaimTimeoutMinutes(env)} minutes'))
+      )
      RETURNING whatsapp_id`
   )
     .bind(now(), messageId)
@@ -129,7 +130,7 @@ export async function pendingInbound(
      FROM inbound_events e JOIN messages m ON m.whatsapp_id = e.whatsapp_id
      WHERE e.status = 'queueing' ORDER BY e.received_at ASC LIMIT ?`
   )
-    .bind(Math.min(Math.max(limit, 1), 50))
+    .bind(Math.min(Math.max(limit, 1), getMaxRecentMessages(env)))
     .all<{ whatsapp_id: string; phone: string; body: string }>()
   return result.results
 }
@@ -143,9 +144,9 @@ export async function recentMessages(
     `SELECT direction, body, created_at AS createdAt
      FROM messages WHERE phone = ? ORDER BY created_at DESC LIMIT ?`
   )
-    .bind(phone, Math.min(Math.max(limit, 1), 30))
+    .bind(phone, Math.min(Math.max(limit, 1), getMaxRecentMessages(env)))
     .all<RecentMessage>()
-  return result.results.reverse()
+  return result.results
 }
 
 export async function enqueueOutbox(
@@ -175,7 +176,7 @@ export async function claimOutbox(
     `UPDATE outbox SET status = 'sending', attempts = attempts + 1,
        next_attempt_at = datetime('now', '+15 minutes')
      WHERE id = ? AND status IN ('pending', 'failed', 'sending') AND next_attempt_at <= CURRENT_TIMESTAMP
-     AND attempts < 5
+     AND attempts < ${getMaxOutboxAttempts(env)}
      RETURNING id, phone, body`
   )
     .bind(id)
@@ -190,7 +191,7 @@ export async function markOutboxSent(
   phone: string,
   body: string
 ): Promise<void> {
-  if (!whatsappId || whatsappId === 'unknown')
+  if (!whatsappId)
     throw new Error('WhatsApp response did not contain a message id')
   const timestamp = now()
   await env.DB.batch([
@@ -232,7 +233,7 @@ export async function touchOutbox(env: Env, id: number): Promise<void> {
 export async function dueOutbox(env: Env, limit = 10): Promise<Array<{ id: number }>> {
   const result = await env.DB.prepare(
     `SELECT id FROM outbox WHERE status IN ('pending', 'failed', 'sending') AND next_attempt_at <= CURRENT_TIMESTAMP
-     AND attempts < 5 ORDER BY created_at ASC LIMIT ?`
+     AND attempts < ${getMaxOutboxAttempts(env)} ORDER BY created_at ASC LIMIT ?`
   )
     .bind(Math.min(Math.max(limit, 1), 25))
     .all<{ id: number }>()
