@@ -1,6 +1,7 @@
 # Mama Bot — Senior Chief Coder Implementation Plan
 
 ## Context
+
 This is a comprehensive architectural overhaul for the mama-bot repository, addressing critical error handling, circuit breakers, input validation, observability, and separation of concerns. The system needs to be hardened against production failures while maintaining its core functionality of processing WhatsApp messages, generating AI responses, and sending morning greetings.
 
 ## Current State Assessment
@@ -49,24 +50,28 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 1: Circuit Breaker Infrastructure
 
 #### Task 1: Implement Circuit Breaker Class
+
 - **Location**: `src/lib/circuitBreaker.ts`
 - **Problem**: All provider chains lack circuit breaker protection
 - **Solution**: Implement generic circuit breaker with state management
 - **Test**: Unit tests for circuit breaker state transitions and recovery
 
 #### Task 2: AI Provider Chain Circuit Breaker
+
 - **Location**: `src/lib/ai.ts:48-61`
 - **Problem**: Groq API calls fail without circuit breaker or retry logic
 - **Solution**: Integrate circuit breaker into AI provider chain
 - **Test**: Integration test simulating API failures and circuit recovery
 
 #### Task 3: Queue Operations Circuit Breaker
+
 - **Location**: `src/scheduler.ts:11-28`
 - **Problem**: Queue operations without circuit breaker
 - **Solution**: Add circuit breaker to queue operations
 - **Test**: Test queue circuit breaker with simulated failures
 
 #### Task 4: Signature Verification Circuit Breaker
+
 - **Location**: `src/webhook.ts:74-80`
 - **Problem**: Signature verification failures accumulate without recovery
 - **Solution**: Implement circuit breaker for signature verification
@@ -75,12 +80,14 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 2: Error Handling Standardization
 
 #### Task 5: Structured Error Handling for JSON Parsing
+
 - **Location**: `src/webhook.ts:82-87`
 - **Problem**: Bare `catch` block without structured error logging
 - **Solution**: Implement structured error handling with logging and recovery
 - **Test**: Test invalid JSON handling and error logging
 
 #### Task 6: Standardized Error Handling Across All Try-Catch Blocks
+
 - **Location**: All bare `catch` blocks in the codebase
 - **Problem**: Multiple inconsistent error handling approaches
 - **Solution**: Standardize error handling with structured logging
@@ -89,12 +96,14 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 3: Input Validation and Security
 
 #### Task 7: Implement Input Validation Middleware
+
 - **Location**: `src/processor.ts:16-42`
 - **Problem**: No validation of message inputs before processing
 - **Solution**: Add comprehensive input validation
 - **Test**: Unit tests for input validation scenarios
 
 #### Task 8: Security Enhancement for Signature Verification
+
 - **Location**: `src/webhook.ts:75-78`
 - **Problem**: Constant-time comparison not properly implemented
 - **Solution**: Ensure constant-time comparison for security
@@ -103,6 +112,7 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 4: Database Transaction Atomicity
 
 #### Task 9: Implement Database Transaction Wrapper
+
 - **Location**: `src/db.ts:68-88`
 - **Problem**: Complex DB operations lack proper rollback
 - **Solution**: Wrap DB operations in transactions with rollback support
@@ -111,12 +121,14 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 5: Observability and Monitoring
 
 #### Task 10: Implement Structured Logging
+
 - **Location**: All console.log/console.error calls
 - **Problem**: Inconsistent logging format without observability
 - **Solution**: Implement structured logging with correlation IDs
 - **Test**: Integration test for structured logging
 
 #### Task 11: Add Health Check Endpoints
+
 - **Location**: `src/index.ts`
 - **Problem**: No health checks for external dependencies
 - **Solution**: Implement comprehensive health checks
@@ -125,12 +137,14 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ### Phase 6: Refactoring for Separation of Concerns
 
 #### Task 12: Separate User Management from Message Handling
+
 - **Location**: `src/db.ts:68-88`
 - **Problem**: User creation mixed with message handling
 - **Solution**: Extract user management into separate service
 - **Test**: Test user management independence
 
 #### Task 13: Separate Business Logic from Data Access
+
 - **Location**: `src/processor.ts:16-42`
 - **Problem**: Business logic tightly coupled with DB access
 - **Solution**: Implement service layer for business logic
@@ -157,18 +171,21 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ## Technical Requirements
 
 ### Performance Considerations
+
 - Circuit breaker timeouts: 60 seconds after 3 consecutive failures
 - Circuit breaker recovery: Half-open state after timeout
 - Retry backoff: Exponential backoff for transient failures
 - Resource limits: Bounded buffers to prevent memory leaks
 
 ### Security Requirements
+
 - All signature verification must use constant-time comparison
 - Input validation to prevent injection attacks
 - Structured logging without exposing sensitive information
 - Circuit breaker state must not leak timing information
 
 ### Reliability Requirements
+
 - All database operations must be atomic
 - Circuit breakers must protect against cascading failures
 - Error handling must not suppress critical information
@@ -177,18 +194,21 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ## Testing Strategy
 
 ### Unit Tests
+
 - Circuit breaker state transitions
 - JSON parsing error handling
 - Input validation scenarios
 - Database transaction atomicity
 
 ### Integration Tests
+
 - AI provider chain with circuit breaker
 - Queue operations under failure conditions
 - End-to-end webhook processing
 - Health check integration
 
 ### Performance Tests
+
 - Circuit breaker recovery time
 - Error handling performance
 - Memory usage under load
@@ -196,11 +216,13 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ## Deployment Considerations
 
 ### Backward Compatibility
+
 - All changes must maintain existing API contracts
 - Configuration remains backward compatible
 - No breaking changes to external interfaces
 
 ### Rollout Strategy
+
 - Implement circuit breakers first
 - Add error handling in subsequent phases
 - Separate concerns last (least impact on runtime)
@@ -208,14 +230,17 @@ This is a comprehensive architectural overhaul for the mama-bot repository, addr
 ## Risk Assessment
 
 ### High Risk
+
 - **Task 9**: Database transaction changes could cause data loss
 - Mitigation: Comprehensive rollback procedures and extensive testing
 
 ### Medium Risk
+
 - **Task 1**: Circuit breaker implementation complexity
 - Mitigation: Phased implementation with extensive unit tests
 
 ### Low Risk
+
 - **Task 10**: Structured logging implementation
 - Mitigation: Standard logging patterns and minimal runtime impact
 
@@ -239,6 +264,7 @@ This plan requires **4-6 weeks** for complete implementation, with the most crit
 ## Monitoring and Alerting
 
 Post-implementation monitoring requirements:
+
 - Circuit breaker state changes
 - Error rate thresholds
 - Database operation failures
