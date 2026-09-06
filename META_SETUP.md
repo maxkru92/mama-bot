@@ -107,6 +107,50 @@ und entferne `GROQ_API_KEY`/`GROQ_MODEL` aus `secrets.env`.
 
 ---
 
+## 11. Logs & Fehlerdiagnose (Observability)
+
+Der Worker hat **Workers Logs und Traces** aktiviert (siehe `[observability]` in
+`wrangler.toml`). Damit siehst du jederzeit, was der Bot tut und wo etwas hängen
+bleibt – ohne auf eine Antwort auf dem Handy warten zu müssen.
+
+**Im Cloudflare-Dashboard:**
+
+1. Cloudflare-Dashboard → **Workers & Pages** → Worker `mama-bot`
+2. Tab **Logs**: Echtzeit-Logstream + gespeicherte Logs der letzten Zeit
+   (100 % der Aufrufe inkl. Cron-Läufe alle 5 Minuten)
+3. Tab **Metrics**: Invocations, Fehlerquote, CPU-Zeit
+4. **Traces**: ca. 1 % der Aufrufe werden als vollständige Ablauf-Traces
+   gespeichert und lassen sich aus einem Logeintrag heraus öffnen
+
+Fehler werden als **strukturiertes JSON** geschrieben und sind damit im Dashboard
+per `event`-Feld filterbar. Wichtige Events:
+
+| event                     | Bedeutung                                        |
+| ------------------------- | ------------------------------------------------ |
+| `queue.processing_failed` | Queue-Verarbeitung fehlgeschlagen                |
+| `outbox.publish_failed`   | Nachricht konnte nicht eingereiht werden         |
+| `morning.publish_failed`  | Morgen-Gruß konnte nicht eingereiht werden       |
+| `inbound.publish_failed`  | Webhook-Nachricht konnte nicht eingereiht werden |
+| `ai.groq_failed`          | Groq-Aufruf fehlgeschlagen (Fallback aktiv)      |
+
+**Live per CLI (während des Debuggens):**
+
+```bash
+cd mama-bot
+npx wrangler tail          # Live-Logstream des Workers
+```
+
+**Schneller Konfigurations-Check ohne Meta:**
+
+```bash
+curl https://mama-bot.<dein-subdomain>.workers.dev/health/config
+```
+
+→ Zeigt `ok: true` und welche Secrets ggf. fehlen, ob D1, Queue und KI angebunden
+sind. Ideal als erster Test nach dem Deployment.
+
+---
+
 ## Fehlerbehebung
 
 | Problem                                   | Lösung                                                                           |

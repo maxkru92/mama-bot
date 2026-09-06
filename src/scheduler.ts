@@ -2,7 +2,12 @@ import { MORNING_MESSAGES } from './config/topics'
 import { dueOutbox, enqueueOutbox, ensureUser, getState, setState } from './db'
 import { hashString, localTime, morningOffsetMinutes, withinLastHours } from './lib/time'
 
+function logRun(outcome: string, extra: Record<string, unknown> = {}): void {
+  console.log(JSON.stringify({ event: 'scheduler.run', outcome, ...extra }))
+}
+
 export async function runScheduled(env: Env, now = new Date()): Promise<void> {
+  const requeued: number[] = []
   for (const due of await dueOutbox(env, 10)) {
     try {
       await env.INBOUND_QUEUE.send({
@@ -11,6 +16,7 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
         phone: env.MOTHER_PHONE,
         outboxId: due.id
       })
+      requeued.push(due.id)
     } catch (error) {
       console.error(
         JSON.stringify({
@@ -21,6 +27,7 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
       )
     }
   }
+  if (requeued.length > 0) logRun('outbox_requeued', { outboxIds: requeued })
 
   const user = await ensureUser(env, env.MOTHER_PHONE)
   // CallMeBot hat keinen Webhook → eingehende Nachrichten unmöglich.
@@ -29,8 +36,10 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
   if (
     channel === 'meta' &&
     (!user.proactiveEnabled || !withinLastHours(user.lastInboundAt, 24, now.getTime()))
-  )
+  ) {
+    logRun('skipped_meta_inactive')
     return
+  }
 
   const clock = localTime(now, user.timezone)
   const hour = Number(env.MORNING_HOUR || 8)
@@ -41,12 +50,26 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
     morningOffsetMinutes(clock.dateKey, Number(env.MORNING_VARIANCE_MINUTES || 10))
   const currentMinutes = clock.hour * 60 + clock.minute
   const minutesAfterTarget = currentMinutes - targetMinutes
-  if (minutesAfterTarget < 0 || minutesAfterTarget > 10) return
+  if (minutesAfterTarget < 0 || minutesAfterTarget > 10) {
+    logRun('outside_morning_window', {
+      minutesAfterTarget,
+      hour: clock.hour,
+      minute: clock.minute,
+      timezone: user.timezone
+    })
+    return
+  }
 
   const stateKey = `morning:${clock.dateKey}`
-  if (await getState(env, stateKey)) return
+  if (await getState(env, stateKey)) {
+    logRun('morning_already_queued', { stateKey })
+    return
+  }
   // MORNING_DAILY=false deaktiviert den taeglichen Morgen-Gruess (Default: an)
-  if ((env.MORNING_DAILY || 'true').toLowerCase() === 'false') return
+  if ((env.MORNING_DAILY || 'true').toLowerCase() === 'false') {
+    logRun('morning_disabled')
+    return
+  }
 
   const index = Math.abs(hashString(clock.dateKey)) % MORNING_MESSAGES.length
   const message = MORNING_MESSAGES[index]
@@ -60,6 +83,7 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
       outboxId
     })
     await setState(env, stateKey, 'queued')
+    logRun('morning_queued', { stateKey, outboxId })
   } catch (error) {
     await setState(env, stateKey, 'failed')
     console.error(

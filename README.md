@@ -30,6 +30,7 @@ Ein warmer, deutschsprachiger **WhatsApp-Begleiter für Mama** — mit italienis
 - [Meta-Einrichtung](#meta-einrichtung)
 - [Projektstruktur](#projektstruktur)
 - [Konfiguration](#konfiguration)
+- [Beobachtbarkeit (Logs & Traces)](#beobachtbarkeit-logs--traces)
 - [Entwicklung & Tests](#entwicklung--tests)
 - [Sicherheit](#sicherheit)
 - [Lizenz](#lizenz)
@@ -348,6 +349,61 @@ mama-bot/
 | `MOTHER_NAME`                     | Persönliche Anrede       | `Mama`                                    |
 | `AI_MODEL`                        | Workers-AI-Modell        | `@cf/meta/llama-3.1-8b-instruct-fp8-fast` |
 | `MAX_REPLY_CHARS`                 | Maximale Antwortlänge    | `2800`                                    |
+
+---
+
+## 📡 Beobachtbarkeit (Logs & Traces)
+
+Der Worker hat **Workers Logs und Traces** aktiviert (`observability` in
+`wrangler.toml`):
+
+```toml
+[observability]
+enabled = true
+logs = { enabled = true, head_sampling_rate = 1 }      # 100 % der Invocations
+traces = { enabled = true, head_sampling_rate = 0.01 } # 1 % der Traces
+```
+
+- **Logs**: 100 % aller Invocations (HTTP-Requests, Cron-Läufe, Queue-Batches) werden
+  gespeichert und sind im Dashboard filterbar.
+- **Traces**: 1 % der Invocations werden als vollständige Traces (inkl. D1-, Queue-
+  und AI-Subrequests) aufgezeichnet. Für die Produktion ist 1 % ein guter
+  Kosten-/Nutzen-Kompromiss – zum Debuggen kann der Wert kurzfristig auf `1`
+  erhöht werden.
+
+### Strukturierte JSON-Logs
+
+Fehler werden als **strukturiertes JSON** geloggt (kein String-Konkatenieren), damit
+sie im Dashboard gezielt per `event`-Feld durchsuchbar sind:
+
+| event                     | Kontext                                                           |
+| ------------------------- | ----------------------------------------------------------------- |
+| `queue.processing_failed` | Queue-Consumer konnte eine Nachricht nicht verarbeiten            |
+| `outbox.publish_failed`   | Scheduler konnte Outbox-Job nicht in die Queue einreihen          |
+| `morning.publish_failed`  | Morgen-Gruß konnte nicht eingereiht werden                        |
+| `inbound.publish_failed`  | Eingehende Webhook-Nachricht konnte nicht eingereiht werden       |
+| `ai.groq_failed`          | Groq-Aufruf warf einen Fehler (Fallback zu Workers AI / statisch) |
+| `ai.groq_http_error`      | Groq antwortete mit einem HTTP-Fehlerstatus                       |
+| `ai.generation_failed`    | Workers-AI-Aufruf warf einen Fehler                               |
+
+### Logs ansehen
+
+**Im Cloudflare-Dashboard:**
+Workers & Pages → `mama-bot` → **Logs** (Echtzeit + gespeichert) und **Metrics**.
+Dort kann z. B. nach `event: "outbox.publish_failed"` gefiltert werden.
+
+**Live per CLI:**
+
+```bash
+npx wrangler tail          # Live-Logstream aller Invocations
+```
+
+**Konfigurationsstatus:**
+
+```bash
+curl https://mama-bot.<dein-subdomain>.workers.dev/health/config
+# => { ok: true, missing: [], aiConfigured: true, d1Configured: true, queueConfigured: true }
+```
 
 ---
 

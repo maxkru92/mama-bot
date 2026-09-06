@@ -13,6 +13,34 @@ export async function sendWhatsappMessage(
   return sendMetaText(env, recipient, message)
 }
 
+// CallMeBot meldet Fehler (Service down, falscher API-Key, falsche Nummer,
+// nicht aktiviert) mit HTTP 200/207 und einem Fehlertext im Body. Nur auf den
+// HTTP-Status zu schauen wuerde solche Fehler still als Erfolg verbuchen und
+// die Nachricht gaenze verlieren. Daher wird der Body auf bekannte
+// Fehlermarker geprueft.
+const CALLMEBOT_ERROR_MARKERS = [
+  'error',
+  'service is down',
+  'wrong apikey',
+  'apikey is invalid',
+  'invalid apikey',
+  'not activated',
+  'not been activated',
+  'is incorrect',
+  'invalid format',
+  'maintenance',
+  'unable to',
+  'failed'
+]
+
+export function callMeBotBodyHasError(body: string): boolean {
+  const normalized = body
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .toLowerCase()
+  return CALLMEBOT_ERROR_MARKERS.some((marker) => normalized.includes(marker))
+}
+
 async function sendCallMeBot(env: Env, recipient: string, text: string): Promise<string> {
   if (!env.CALLMEBOT_API_KEY) throw new Error('CALLMEBOT_API_KEY fehlt (CHANNEL=callmebot)')
   // CallMeBot erwartet die Nummer OHNE "+" und ohne Leerzeichen.
@@ -21,9 +49,14 @@ async function sendCallMeBot(env: Env, recipient: string, text: string): Promise
     `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}` +
     `&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(env.CALLMEBOT_API_KEY)}`
   const response = await fetch(url)
-  if (!response.ok) {
-    const body = await response.text().catch(() => '')
-    throw new Error(`CallMeBot send failed (${response.status}): ${body.slice(0, 200)}`)
+  const body = await response.text().catch(() => '')
+  if (!response.ok || callMeBotBodyHasError(body)) {
+    const snippet = body
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+      .slice(0, 200)
+    throw new Error(`CallMeBot send failed (${response.status}): ${snippet || 'empty response'}`)
   }
   // CallMeBot liefert keine message-id; deterministische Pseudo-ID für die Outbox.
   return `callmebot-${Date.now()}`
