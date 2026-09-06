@@ -27,7 +27,7 @@ binding = "AI"
 [[d1_databases]]
 binding = "DB"
 database_name = "mama-bot-db"
-database_id = "e2ddcba4-6969-4872-b538-75bdb3ae0b10"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
 migrations_dir = "migrations"
 
 [[queues.producers]]

@@ -63,7 +63,7 @@ Es ist nur ein Passwort zwischen Meta und dem Bot – du legst es selbst fest.
 ## 7. Werte eintragen und deployen
 
 ```bash
-cd "1. Mama-bot/mama-bot-final"
+cd mama-bot
 npm install                        # Abhängigkeiten einmalig installieren
 cp secrets.env.example secrets.env
 # secrets.env mit den Werten fuellen:
@@ -72,6 +72,8 @@ cp secrets.env.example secrets.env
 #   WHATSAPP_VERIFY_TOKEN       = dein selbst gewaehltes Token aus Schritt 6
 #   META_APP_SECRET             = App-Secret aus Schritt 5
 #   MOTHER_PHONE                = Mamas Nummer OHNE "+", z. B. 491512345678
+#   GROQ_API_KEY                = Optional: Groq API Key (gsk_...) für KI-Antworten
+#   CALLMEBOT_API_KEY          = Optional: CallMeBot API Key für alternativen Kanal
 ./deploy.sh secrets   # setzt die Secrets auf Cloudflare
 ./deploy.sh           # migriert die DB und deployed den Worker
 ```
@@ -85,7 +87,18 @@ cp secrets.env.example secrets.env
 4. **Webhook fields**: `messages` abonnieren
 5. **Verify and save** – der Bot bestätigt automatisch.
 
-## 9. Testen
+## 9. KI-Anbieter wählen (optional)
+
+Standardmäßig nutzt der Bot **Groq** (schnell, günstig, API-Key reicht). Falls du
+Groq nicht nutzen willst, stelle in `wrangler.toml` `AI_PROVIDER = "workers-ai"`
+und entferne `GROQ_API_KEY`/`GROQ_MODEL` aus `secrets.env`.
+
+| Anbieter           | Voraussetzung                | Vorteil                        |
+| ------------------ | ---------------------------- | ----------------------------- |
+| **Groq** (Standard)| `GROQ_API_KEY` in secrets.env| Schnell, kostenlos bedienbar   |
+| **Workers AI**     | `AI_PROVIDER=workers-ai`     | Keine externen Keys nötig      |
+
+## 10. Testen
 
 1. Schreib Mama (oder dir selbst) auf dem Testnummer-Handy eine WhatsApp-Nachricht.
 2. Du solltest innerhalb weniger Sekunden eine KI-Antwort erhalten.
