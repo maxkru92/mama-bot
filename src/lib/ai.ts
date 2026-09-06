@@ -51,8 +51,10 @@ export async function generateReply(
       if (groqText) return { text: groqText, provider: 'groq' }
     } catch (error) {
       console.error(
-        'Groq generation failed',
-        error instanceof Error ? error.message : 'unknown error'
+        JSON.stringify({
+          event: 'ai.groq_failed',
+          error: error instanceof Error ? error.message : 'unknown error'
+        })
       )
       // weiter zu workers-ai/fallback
     }
@@ -74,7 +76,13 @@ export async function generateReply(
     )
     return text ? { text, provider: 'workers-ai' } : { text: fallback, provider: 'fallback' }
   } catch (error) {
-    console.error('AI generation failed', error instanceof Error ? error.message : 'unknown error')
+    console.error(
+      JSON.stringify({
+        event: 'ai.generation_failed',
+        provider: env.AI_PROVIDER || 'workers-ai',
+        error: error instanceof Error ? error.message : 'unknown error'
+      })
+    )
     return { text: fallback, provider: 'fallback' }
   }
 }
@@ -97,7 +105,7 @@ async function callGroq(env: Env, prompt: string): Promise<string | null> {
     })
   })
   if (!response.ok) {
-    console.error(`Groq API error (${response.status})`)
+    console.error(JSON.stringify({ event: 'ai.groq_http_error', status: response.status }))
     return null
   }
   const payload = (await response.json().catch(() => ({}))) as {

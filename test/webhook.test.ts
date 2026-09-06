@@ -8,15 +8,16 @@ describe('Meta webhook verification', () => {
     const request = new Request(
       'https://example.com/webhook?hub.mode=subscribe&hub.verify_token=test-token&hub.challenge=abc123'
     )
-    const response = verifyRequest(request, env)
+    const response = await verifyRequest(request, env)
     expect(response.status).toBe(200)
     expect(await response.text()).toBe('abc123')
   })
 
-  it('rejects an incorrect token', () => {
+  it('rejects an incorrect token', async () => {
     const request = new Request(
       'https://example.com/webhook?hub.mode=subscribe&hub.verify_token=wrong&hub.challenge=abc123'
     )
-    expect(verifyRequest(request, env).status).toBe(403)
+    const response = await verifyRequest(request, env)
+    expect(response.status).toBe(403)
   })
 })

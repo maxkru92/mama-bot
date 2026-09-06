@@ -47,8 +47,12 @@ export default {
         message.ack()
       } catch (error) {
         console.error(
-          'queue processing failed',
-          error instanceof Error ? error.message : 'unknown error'
+          JSON.stringify({
+            event: 'queue.processing_failed',
+            kind: message.body.kind,
+            messageId: message.body.messageId,
+            error: error instanceof Error ? error.message : 'unknown error'
+          })
         )
         message.retry()
       }

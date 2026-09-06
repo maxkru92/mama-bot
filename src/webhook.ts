@@ -1,4 +1,4 @@
-import { ensureUser, markInbound, markInboundQueued, pendingInbound } from './db'
+import { ensureUser, markInbound, markInboundQueued } from './db'
 import { recipientIsConfigured } from './processor'
 import { verifyMetaSignature } from './lib/signature'
 import type {
@@ -8,12 +8,34 @@ import type {
   QueueMessage
 } from './types'
 
-export function verifyRequest(request: Request, env: Env): Response {
+async function timingSafeEqualString(provided: string, expected: string): Promise<boolean> {
+  // Hash both sides to a fixed 32-byte size first, so the input length is
+  // not observable through comparison timing.
+  const encoder = new TextEncoder()
+  const [providedHash, expectedHash] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(provided)),
+    crypto.subtle.digest('SHA-256', encoder.encode(expected))
+  ])
+  const providedBytes = new Uint8Array(providedHash)
+  const expectedBytes = new Uint8Array(expectedHash)
+  // Constant-time byte-wise comparison over the full fixed-size digests.
+  let difference = 0
+  for (let index = 0; index < providedBytes.length; index += 1) {
+    difference |= providedBytes[index] ^ expectedBytes[index]
+  }
+  return difference === 0
+}
+
+export async function verifyRequest(request: Request, env: Env): Promise<Response> {
   const url = new URL(request.url)
   const mode = url.searchParams.get('hub.mode')
-  const token = url.searchParams.get('hub.verify_token')
+  const token = url.searchParams.get('hub.verify_token') ?? ''
   const challenge = url.searchParams.get('hub.challenge')
-  if (mode === 'subscribe' && token === env.WHATSAPP_VERIFY_TOKEN && challenge) {
+  if (
+    mode === 'subscribe' &&
+    challenge &&
+    (await timingSafeEqualString(token, env.WHATSAPP_VERIFY_TOKEN))
+  ) {
     return new Response(challenge, { status: 200 })
   }
   return new Response('Forbidden', { status: 403 })
@@ -83,23 +105,13 @@ export async function handleWebhook(request: Request, env: Env): Promise<Respons
       await Promise.all(pending.map((entry) => markInboundQueued(env, entry.message.id)))
     } catch (error) {
       console.error(
-        'inbound queue publish failed',
-        error instanceof Error ? error.message : 'unknown error'
+        JSON.stringify({
+          event: 'inbound.publish_failed',
+          error: error instanceof Error ? error.message : 'unknown error'
+        })
       )
       return new Response('Queue unavailable', { status: 503 })
     }
   }
   return new Response('EVENT_RECEIVED', { status: 200 })
-}
-
-export async function prepareUser(env: Env): Promise<void> {
-  await ensureUser(env, env.MOTHER_PHONE)
-  for (const pendingMessage of await pendingInbound(env)) {
-    await env.INBOUND_QUEUE.send({
-      kind: 'inbound',
-      messageId: pendingMessage.whatsapp_id,
-      phone: pendingMessage.phone,
-      text: pendingMessage.body
-    })
-  }
 }

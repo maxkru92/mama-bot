@@ -120,20 +120,6 @@ export async function markInboundProcessed(env: Env, messageId: string): Promise
     .run()
 }
 
-export async function pendingInbound(
-  env: Env,
-  limit = 25
-): Promise<Array<{ whatsapp_id: string; phone: string; body: string }>> {
-  const result = await env.DB.prepare(
-    `SELECT e.whatsapp_id, m.phone, m.body
-     FROM inbound_events e JOIN messages m ON m.whatsapp_id = e.whatsapp_id
-     WHERE e.status = 'queueing' ORDER BY e.received_at ASC LIMIT ?`
-  )
-    .bind(Math.min(Math.max(limit, 1), 50))
-    .all<{ whatsapp_id: string; phone: string; body: string }>()
-  return result.results
-}
-
 export async function recentMessages(
   env: Env,
   phone: string,

@@ -1,5 +1,4 @@
-import { MORNING_MESSAGES, TOPICS } from '../config/topics'
-import type { MorningCandidate } from '../types'
+import { TOPICS } from '../config/topics'
 
 export function fallbackReply(text: string, name: string): string {
   const normalized = text.toLocaleLowerCase('de-DE')
@@ -13,8 +12,4 @@ export function fallbackReply(text: string, name: string): string {
   const topic =
     TOPICS.find((candidate) => candidate.tags.some((tag) => normalized.includes(tag))) ?? TOPICS[0]
   return `${topic.text} Wenn du möchtest, erzähle ich dir mehr dazu oder mache daraus eine konkrete Reiseidee beziehungsweise ein Rezept.`
-}
-
-export function morningFallback(index: number): MorningCandidate {
-  return MORNING_MESSAGES[index % MORNING_MESSAGES.length]
 }

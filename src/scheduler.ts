@@ -1,5 +1,5 @@
 import { MORNING_MESSAGES } from './config/topics'
-import { dueOutbox, enqueueOutbox, ensureUser, getState, setState, touchOutbox } from './db'
+import { dueOutbox, enqueueOutbox, ensureUser, getState, setState } from './db'
 import { hashString, localTime, morningOffsetMinutes, withinLastHours } from './lib/time'
 
 export async function runScheduled(env: Env, now = new Date()): Promise<void> {
@@ -11,11 +11,13 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
         phone: env.MOTHER_PHONE,
         outboxId: due.id
       })
-      await touchOutbox(env, due.id)
     } catch (error) {
       console.error(
-        'outbox queue publish failed',
-        error instanceof Error ? error.message : 'unknown error'
+        JSON.stringify({
+          event: 'outbox.publish_failed',
+          outboxId: due.id,
+          error: error instanceof Error ? error.message : 'unknown error'
+        })
       )
     }
   }
@@ -58,12 +60,14 @@ export async function runScheduled(env: Env, now = new Date()): Promise<void> {
       outboxId
     })
     await setState(env, stateKey, 'queued')
-    await touchOutbox(env, outboxId)
   } catch (error) {
     await setState(env, stateKey, 'failed')
     console.error(
-      'morning queue publish failed',
-      error instanceof Error ? error.message : 'unknown error'
+      JSON.stringify({
+        event: 'morning.publish_failed',
+        stateKey,
+        error: error instanceof Error ? error.message : 'unknown error'
+      })
     )
   }
 }
