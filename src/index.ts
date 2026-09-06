@@ -1,6 +1,7 @@
 import { runScheduled } from './scheduler'
 import { processInbound, processOutbox } from './processor'
 import { handleWebhook } from './webhook'
+import { logError } from './lib/logger'
 import type { QueueMessage } from './types'
 import { configurationStatus } from './config/env'
 
@@ -62,18 +63,18 @@ export default {
     }
     for (const chunk of chunks) {
       await Promise.all(
-        chunk.map((message) => {
-          return (async () => {
+        chunk.map(async (message) => {
+          try {
             if (message.body.kind === 'inbound' && message.body.text) {
-              message.ack()
               await processInbound(env, message.body.phone, message.body.text, message.body.messageId)
             } else if (message.body.kind === 'outbox' && message.body.outboxId) {
-              message.ack()
               await processOutbox(env, message.body.outboxId)
-            } else {
-              message.ack()
             }
-          })()
+            message.ack()
+          } catch (error) {
+            logError('queue processing failed', error, { messageId: message.body.messageId, phone: message.body.phone })
+            message.retry()
+          }
         })
       )
     }
