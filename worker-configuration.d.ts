@@ -8,9 +8,13 @@ interface Env {
   MORNING_HOUR: string
   MORNING_MINUTE: string
   MORNING_VARIANCE_MINUTES: string
+  MORNING_DAILY: string
+  AI_PROVIDER: string
   AI_MODEL: string
+  GROQ_MODEL: string
   WHATSAPP_API_VERSION: string
   MAX_REPLY_CHARS: string
+  CHANNEL: string
   WHATSAPP_TOKEN: string
   WHATSAPP_PHONE_NUMBER_ID: string
   WHATSAPP_VERIFY_TOKEN: string

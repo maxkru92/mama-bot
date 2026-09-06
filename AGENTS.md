@@ -67,7 +67,7 @@ Lokaler Test-Server erfordert `secrets.env` mit mindestens leeren Werten für di
 ## Architektur-Entscheidungen
 
 - **Provider-Kette**: Bei `AI_PROVIDER=groq` wird zuerst Groq API (`callGroq`) aufgerufen. Bei Fehler oder wenn kein `GROQ_API_KEY` gesetzt ist, fall back auf Cloudflare Workers AI (`env.AI.run`). Final Fallback auf regelbasierten Fallback-Reply.
-- **Kanal-Dispatch**: `sendWhatsAppText` dispatcht basierend auf `CHANNEL` auf CallMeBot (einfach, gratis, keine Meta-Token nötig) oder Meta Cloud API.
+- **Kanal-Dispatch**: `sendWhatsappMessage` dispatcht basierend auf `CHANNEL` auf CallMeBot (einfach, gratis, keine Meta-Token nötig) oder Meta Cloud API.
 - **Message-Id**: CallMeBot liefert keine echte Message-Id; es wird eine deterministische Pseudo-Id `callmebot-{timestamp}` verwendet für Outbox-Tracking.
 - **Rechtlicher Hinweis**: System-Prompt enthält explizite Hinweise zu Notfallsituationen (112, 110, Giftnotruf 030 19240) und rechtlichen Grenzen (keine Beratung).
 - **MORNING_DAILY**: Täglicher Morgen-Gruess kann mit `MORNING_DAILY=false` deaktiviert werden, ohne den Scheduler zu deaktivieren.

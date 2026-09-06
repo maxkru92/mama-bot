@@ -1,3 +1,8 @@
+export async function sendWhatsappMessage(
+  env: Env,
+  recipient: string,
+  text: string
+): Promise<string> {
   // Kanal-Dispatcher: CHANNEL=callmebot nutzt CallMeBot (kein Meta-Token nötig),
   // Standard ist die offizielle Meta Cloud API.
   const channel = (env.CHANNEL || 'meta').toLowerCase()
