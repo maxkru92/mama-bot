@@ -1,3 +1,8 @@
+export function normalizeCallMeBotPhone(recipient: string): string {
+  const digits = recipient.replace(/\D/g, '')
+  return digits.startsWith('00') ? digits.slice(2) : digits
+}
+
 export async function sendWhatsappMessage(
   env: Env,
   recipient: string,
@@ -19,18 +24,16 @@ export async function sendWhatsappMessage(
 // die Nachricht gaenze verlieren. Daher wird der Body auf bekannte
 // Fehlermarker geprueft.
 const CALLMEBOT_ERROR_MARKERS = [
-  'error',
   'service is down',
   'wrong apikey',
   'apikey is invalid',
   'invalid apikey',
   'not activated',
   'not been activated',
-  'is incorrect',
+  'phone number is incorrect',
+  'invalid phone number',
   'invalid format',
-  'maintenance',
-  'unable to',
-  'failed'
+  'unable to send'
 ]
 
 export function callMeBotBodyHasError(body: string): boolean {
@@ -38,13 +41,16 @@ export function callMeBotBodyHasError(body: string): boolean {
     .replace(/<[^>]*>/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .toLowerCase()
-  return CALLMEBOT_ERROR_MARKERS.some((marker) => normalized.includes(marker))
+  return (
+    normalized.trimStart().startsWith('error:') ||
+    CALLMEBOT_ERROR_MARKERS.some((marker) => normalized.includes(marker))
+  )
 }
 
 async function sendCallMeBot(env: Env, recipient: string, text: string): Promise<string> {
   if (!env.CALLMEBOT_API_KEY) throw new Error('CALLMEBOT_API_KEY fehlt (CHANNEL=callmebot)')
   // CallMeBot erwartet die Nummer OHNE "+" und ohne Leerzeichen.
-  const phone = recipient.replace(/[^\d]/g, '')
+  const phone = normalizeCallMeBotPhone(recipient)
   const url =
     `https://api.callmebot.com/whatsapp.php?phone=${encodeURIComponent(phone)}` +
     `&text=${encodeURIComponent(text)}&apikey=${encodeURIComponent(env.CALLMEBOT_API_KEY)}`

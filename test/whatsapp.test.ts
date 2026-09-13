@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { sendWhatsappMessage } from '../src/lib/whatsapp'
-import { callMeBotBodyHasError } from '../src/lib/whatsapp'
+import {
+  callMeBotBodyHasError,
+  normalizeCallMeBotPhone,
+  sendWhatsappMessage
+} from '../src/lib/whatsapp'
 
 const baseEnv = {
   CHANNEL: 'callmebot',
@@ -11,8 +14,6 @@ const baseEnv = {
 
 beforeEach(() => {
   vi.unstubAllGlobals?.()
-  // Clear any previous fetch mocks
-  // Note: vi.mockedFetch is deprecated in Vitest v4, use manual mocking instead
 })
 
 afterEach(() => {
@@ -20,6 +21,11 @@ afterEach(() => {
 })
 
 describe('CallMeBot response handling', () => {
+  it('normalizes plus and 00 international number notation', () => {
+    expect(normalizeCallMeBotPhone('+49 160 90764166')).toBe('4916090764166')
+    expect(normalizeCallMeBotPhone('004916090764166')).toBe('4916090764166')
+  })
+
   it('detects error markers in the HTML body', () => {
     expect(
       callMeBotBodyHasError(
