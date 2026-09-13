@@ -1,3 +1,4 @@
+import { buildCallMeBotPrompt, type CallMeBotIntent } from './callmebot'
 import { generateReply } from './lib/ai'
 import { commandFor, helpText, safetyPrefix } from './lib/commands'
 import { topicContext } from './config/topics'
@@ -61,6 +62,36 @@ function legalSafetyContext(): string {
     'Frage bei fehlenden Angaben nach Land, zuständiger Stelle, Frist und relevanten Bescheiden.',
     'Bei akuter Gefahr oder medizinischem Notfall auf 112 verweisen; bei rechtlichen Fristen keine Frist durch die Antwort als erledigt darstellen.'
   ].join(' ')
+}
+
+export async function processCallMeBot(
+  env: Env,
+  phone: string,
+  intent: CallMeBotIntent,
+  messageId: string
+): Promise<void> {
+  if (!(await claimInbound(env, messageId))) return
+  const user = await ensureUser(env, phone)
+  if (intent === 'stop') {
+    await updateProactive(env, phone, false)
+  } else if (intent === 'start') {
+    await updateProactive(env, phone, true)
+  }
+  const history = await recentMessages(env, phone)
+  const preferences = await recentPreferences(env, phone)
+  const preferenceContext = preferences
+    .map((preference) => `${preference.key}: ${preference.value}`)
+    .join('\\n')
+  const result = await generateReply(
+    env,
+    buildCallMeBotPrompt(intent),
+    user.name,
+    history,
+    `${topicContext()}\\n\\nPersönliche Vorlieben:\\n${preferenceContext}`,
+    legalSafetyContext()
+  )
+  await deliverNewOutbox(env, phone, result.text, 'reply', `reply:${messageId}`)
+  await markInboundProcessed(env, messageId)
 }
 
 export async function deliverNewOutbox(

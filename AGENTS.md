@@ -6,6 +6,7 @@ Dieses Dokument richtet sich an KI-Agenten (Codebuff, Kilo, Cursor etc.), die in
 
 - `src/index.ts` — Cloudflare Worker Entry (fetch / scheduled / queue)
 - `src/webhook.ts` — Meta WhatsApp-Webhook + outbound Dispatch
+- `src/callmebot.ts` — CallMeBot Query-Bridge: geschützte Action-URL und Intent-Mapping
 - `src/processor.ts` — Inbound/Outbound-Verarbeitung, Commands
 - `src/lib/ai.ts` — KI-Antwortgenerierung (Groq → Workers AI → Fallback)
 - `src/lib/whatsapp.ts` — Sende-Logik (Meta Cloud API + CallMeBot)
@@ -36,7 +37,7 @@ WICHTIG: Alle Konfiguration erfolgt über `wrangler.toml` `[vars]`. Secrets werd
 
 Secrets (werden via `wrangler secret put` gesetzt):
 
-- `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`, `GROQ_API_KEY`, `CALLMEBOT_API_KEY`
+- `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`, `META_APP_SECRET`, `MOTHER_PHONE`, `GROQ_API_KEY`, `CALLMEBOT_API_KEY`, `CALLMEBOT_CALLBACK_TOKEN`
 
 ## Secrets setzen
 

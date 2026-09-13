@@ -1,5 +1,6 @@
+import { handleCallMeBotAction } from './callmebot'
 import { handleWebhook } from './webhook'
-import { processInbound, processOutbox } from './processor'
+import { processCallMeBot, processInbound, processOutbox } from './processor'
 import { runScheduled } from './scheduler'
 import type { QueueMessage } from './types'
 
@@ -14,6 +15,8 @@ export default {
       try {
         if (payload.kind === 'inbound' && payload.text) {
           await processInbound(env, payload.phone, payload.text, payload.messageId)
+        } else if (payload.kind === 'callmebot' && payload.intent) {
+          await processCallMeBot(env, payload.phone, payload.intent, payload.messageId)
         } else if (payload.kind === 'outbox' && payload.outboxId) {
           await processOutbox(env, payload.outboxId)
         }
@@ -34,6 +37,8 @@ export default {
 
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
+
+    if (url.pathname === '/callmebot/inbound') return handleCallMeBotAction(request, env)
 
     if (url.pathname === '/webhook') return handleWebhook(request, env, ctx)
 

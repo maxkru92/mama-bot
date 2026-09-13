@@ -4,7 +4,7 @@ const META_SECRETS = [
   'WHATSAPP_VERIFY_TOKEN',
   'META_APP_SECRET'
 ] as const
-const CALLMEBOT_SECRETS = ['CALLMEBOT_API_KEY'] as const
+const CALLMEBOT_SECRETS = ['CALLMEBOT_API_KEY', 'CALLMEBOT_CALLBACK_TOKEN'] as const
 
 export function missingConfiguration(env: Env): string[] {
   const channel = (env.CHANNEL || 'meta').toLowerCase()

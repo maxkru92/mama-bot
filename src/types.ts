@@ -1,12 +1,15 @@
+import type { CallMeBotIntent } from './callmebot'
+
 export type Direction = 'inbound' | 'outbound'
 export type MessageStatus = 'received' | 'queued' | 'sent' | 'failed'
 
 export interface QueueMessage {
-  kind: 'inbound' | 'outbox'
+  kind: 'inbound' | 'outbox' | 'callmebot'
   messageId: string
   phone: string
   text?: string
   outboxId?: number
+  intent?: CallMeBotIntent
 }
 
 export interface MetaWebhookPayload {

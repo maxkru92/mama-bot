@@ -30,6 +30,7 @@ Ein warmer, deutschsprachiger **WhatsApp-Begleiter für Mama** — mit italienis
 - [Meta-Einrichtung](#meta-einrichtung)
 - [Projektstruktur](#projektstruktur)
 - [Konfiguration](#konfiguration)
+- [CallMeBot Query-Bridge](#callmebot-query-bridge)
 - [Beobachtbarkeit (Logs & Traces)](#beobachtbarkeit-logs--traces)
 - [Entwicklung & Tests](#entwicklung--tests)
 - [Sicherheit](#sicherheit)
@@ -352,7 +353,19 @@ mama-bot/
 
 ---
 
-## 📡 Beobachtbarkeit (Logs & Traces)
+## 📲 CallMeBot Query-Bridge (ohne Meta)
+
+Für eine Cloudflare-only-Installation kann CallMeBot konfigurierte Queries an den
+Worker weiterleiten. Unterstützt werden feste Themen wie `italien`, `toskana`,
+`rezept`, `pflege`, `rente`, `anwalt`, `hilfe`, `start` und `stop`.
+
+```text
+WhatsApp-Query → CallMeBot → /callmebot/inbound → Queue → Groq → CallMeBot-Antwort
+```
+
+Die Einrichtung steht in **[`CALLMEBOT_QUERY_SETUP.md`](./CALLMEBOT_QUERY_SETUP.md)**.
+Dieser Weg ist kein freier WhatsApp-Chat; beliebige Nachrichtentexte werden von
+CallMeBot nicht garantiert als Inbound-Webhook übertragen.
 
 Der Worker hat **Workers Logs und Traces** aktiviert (`observability` in
 `wrangler.toml`):

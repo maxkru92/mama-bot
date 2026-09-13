@@ -22,4 +22,5 @@ interface Env {
   MOTHER_PHONE: string
   GROQ_API_KEY: string
   CALLMEBOT_API_KEY: string
+  CALLMEBOT_CALLBACK_TOKEN: string
 }
