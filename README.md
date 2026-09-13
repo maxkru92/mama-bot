@@ -355,15 +355,21 @@ mama-bot/
 
 ## 📲 CallMeBot Query-Bridge (ohne Meta)
 
-Für eine Cloudflare-only-Installation kann CallMeBot konfigurierte Queries an den
-Worker weiterleiten. Unterstützt werden feste Themen wie `italien`, `toskana`,
-`rezept`, `pflege`, `rente`, `anwalt`, `hilfe`, `start` und `stop`.
+Für eine Cloudflare-only-Installation enthält der Worker eine CallMeBot-Query-Bridge
+für konfigurierte Themen. Die CallMeBot-Seite markiert den Empfangs-/Query-Dienst
+aktuell jedoch weiterhin als „in development“; die dokumentierten Registrierungs-
+Endpoints waren bei der Live-Prüfung am 13. September 2026 nicht verfügbar (HTTP 404).
+Die Worker-Seite ist vorbereitet, aber der freie Eingang ist deshalb **nicht als live
+aktiviert zu betrachten**.
+
+Unterstützt werden feste Themen wie `italien`, `toskana`, `rezept`, `pflege`, `rente`,
+`anwalt`, `hilfe`, `start` und `stop`.
 
 ```text
 WhatsApp-Query → CallMeBot → /callmebot/inbound → Queue → Groq → CallMeBot-Antwort
 ```
 
-Die Einrichtung steht in **[`CALLMEBOT_QUERY_SETUP.md`](./CALLMEBOT_QUERY_SETUP.md)**.
+Die Einrichtung und der aktuelle Status stehen in **[`CALLMEBOT_QUERY_SETUP.md`](./CALLMEBOT_QUERY_SETUP.md)**.
 Dieser Weg ist kein freier WhatsApp-Chat; beliebige Nachrichtentexte werden von
 CallMeBot nicht garantiert als Inbound-Webhook übertragen.
 

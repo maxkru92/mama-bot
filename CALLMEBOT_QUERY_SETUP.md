@@ -1,5 +1,12 @@
 # CallMeBot Query Bridge – Cloudflare-only Einrichtung
 
+**Live-Status (13. September 2026):** Die Worker-Bridge ist implementiert und deployed.
+Die offizielle CallMeBot-Seite kennzeichnet den Query-/Empfangsdienst weiterhin als
+„in development“. Die dort dokumentierten `whatsapp_add.php`-, `whatsapp_list.php`- und `whatsapp_remove.php`-Endpoints antworteten bei der Live-Prüfung mit HTTP 404.
+Daher ist die Registrierung derzeit **nicht bestätigt und nicht als live verfügbar
+anzusehen**. Diese Anleitung beschreibt die vorbereitete Worker-Seite für den Fall,
+dass CallMeBot den Dienst wieder freischaltet oder einen aktuellen Endpoint bereitstellt.
+
 Diese Variante benötigt **keine Meta WhatsApp Cloud API**. Sie nutzt die dokumentierte
 CallMeBot-Query/Action-Funktion:
 
@@ -85,11 +92,12 @@ https://api.callmebot.com/whatsapp_list.php?phone=4916090764166&apikey=<CALLMEBO
 https://api.callmebot.com/whatsapp_remove.php?phone=4916090764166&apikey=<CALLMEBOT_API_KEY>&query=pflege
 ```
 
-## 5. Antwortverhalten
+## 6. Aktueller Befund
 
-Der Worker lädt D1-Verlauf und persönliche Präferenzen, erzeugt mit Groq eine kurze
-Antwort und legt sie in die bestehende Outbox. Die Cloudflare Queue verarbeitet die
-Outbox und versendet die Antwort über CallMeBot.
+Die Worker-Route kann nach dem Setzen von `CALLMEBOT_CALLBACK_TOKEN` sicher getestet
+werden. Ohne dieses Secret antwortet sie absichtlich mit `503`. Eine echte WhatsApp-
+Nachricht wird erst verarbeitet, wenn CallMeBot die Query-Registrierung wieder anbietet
+und eine registrierte Query den Endpoint aufruft.
 
-Pflege-, Renten- und Rechtsfragen erhalten ausdrücklich keine verbindliche Beratung.
-Der Bot soll auf zuständige Stellen, Fristenprüfung und zugelassene Beratung verweisen.
+Für einen echten freien Zwei-Wege-Chat bleibt weiterhin ein Inbound-Anbieter nötig,
+beispielsweise die Meta Cloud API oder ein dauerhaft laufender WhatsApp-Web-Client.
