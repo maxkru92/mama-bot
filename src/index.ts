@@ -1,9 +1,10 @@
+import { handleWebhook } from './webhook'
 import { processInbound, processOutbox } from './processor'
 import { runScheduled } from './scheduler'
 import type { QueueMessage } from './types'
 
 export default {
-  async scheduled(event: ScheduledEvent, env: any, ctx: ExecutionContext): Promise<void> {
+  async scheduled(event: ScheduledEvent, env: Env, ctx: ExecutionContext): Promise<void> {
     ctx.waitUntil(runScheduled(env))
   },
 
@@ -31,8 +32,10 @@ export default {
     }
   },
 
-  async fetch(request: Request, env: any): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url)
+
+    if (url.pathname === '/webhook') return handleWebhook(request, env, ctx)
 
     if (url.pathname === '/health' || url.pathname === '/health/config') {
       return new Response(

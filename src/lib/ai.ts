@@ -8,7 +8,9 @@ export async function generateReply(
   env: Env,
   prompt: string,
   motherName: string,
-  history: Array<{ direction: string; body?: string; content?: string }>
+  history: Array<{ direction: string; body?: string; content?: string }>,
+  topicKnowledge = '',
+  safetyKnowledge = ''
 ): Promise<AiResult> {
   const correlationId = crypto.randomUUID()
 
@@ -32,7 +34,7 @@ export async function generateReply(
       return `${sender}: ${msg.body || msg.content || ''}`
     })
     .join('\n')
-  const fullContext = `${baseContext}\n\nBisheriger Gesprächsverlauf:\n${historyContext}`
+  const fullContext = `${baseContext}\n\nThemenwissen:\n${topicKnowledge}\n\nSicherheits- und Fachhinweise:\n${safetyKnowledge}\n\nBisheriger Gesprächsverlauf:\n${historyContext}`
 
   try {
     const text = await groqCircuitBreaker.execute(() =>

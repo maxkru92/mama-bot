@@ -27,3 +27,17 @@ export async function verifyMetaSignature(
   )
   return crypto.subtle.verify('HMAC', key, expected, body)
 }
+
+export async function timingSafeEqualString(left: string, right: string): Promise<boolean> {
+  const [leftDigest, rightDigest] = await Promise.all([
+    crypto.subtle.digest('SHA-256', encoder.encode(left)),
+    crypto.subtle.digest('SHA-256', encoder.encode(right))
+  ])
+  const leftBytes = new Uint8Array(leftDigest)
+  const rightBytes = new Uint8Array(rightDigest)
+  let difference = 0
+  for (let index = 0; index < leftBytes.length; index += 1) {
+    difference |= leftBytes[index] ^ rightBytes[index]
+  }
+  return difference === 0
+}

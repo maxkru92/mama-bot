@@ -1,5 +1,6 @@
 import { generateReply } from './lib/ai'
 import { commandFor, helpText, safetyPrefix } from './lib/commands'
+import { topicContext } from './config/topics'
 import { sendWhatsappMessage } from './lib/whatsapp'
 import {
   claimInbound,
@@ -10,6 +11,7 @@ import {
   markOutboxFailed,
   markOutboxSent,
   recentMessages,
+  recentPreferences,
   updateProactive
 } from './db'
 
@@ -34,11 +36,31 @@ export async function processInbound(
     body = helpText(user.name)
   } else {
     const history = await recentMessages(env, phone)
-    const result = await generateReply(env, text, user.name, history)
+    const preferences = await recentPreferences(env, phone)
+    const preferenceContext = preferences
+      .map((preference) => `${preference.key}: ${preference.value}`)
+      .join('\\n')
+    const result = await generateReply(
+      env,
+      text,
+      user.name,
+      history,
+      `${topicContext()}\\n\\nPersönliche Vorlieben:\\n${preferenceContext}`,
+      legalSafetyContext()
+    )
     body = `${safetyPrefix(text)}${result.text}`
   }
   await deliverNewOutbox(env, phone, body, 'reply', `reply:${messageId}`)
   await markInboundProcessed(env, messageId)
+}
+
+function legalSafetyContext(): string {
+  return [
+    'Bei Pflege-, Renten-, Sozialleistungs- oder Rechtsfragen: keine verbindliche Rechtsberatung geben.',
+    'Erkläre allgemeine Orientierung in einfacher Sprache, nenne Unsicherheiten und empfehle eine Prüfung bei Pflegekasse, Deutscher Rentenversicherung, Sozialverband, Verbraucherzentrale oder zugelassenem Anwalt.',
+    'Frage bei fehlenden Angaben nach Land, zuständiger Stelle, Frist und relevanten Bescheiden.',
+    'Bei akuter Gefahr oder medizinischem Notfall auf 112 verweisen; bei rechtlichen Fristen keine Frist durch die Antwort als erledigt darstellen.'
+  ].join(' ')
 }
 
 export async function deliverNewOutbox(

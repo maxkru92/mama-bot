@@ -89,6 +89,14 @@ export async function markInbound(env: Env, message: IncomingMessage): Promise<b
   return true
 }
 
+export async function markInboundQueueing(env: Env, messageId: string): Promise<void> {
+  await env.DB.prepare(
+    `UPDATE inbound_events SET status = 'pending' WHERE whatsapp_id = ? AND status = 'queueing'`
+  )
+    .bind(messageId)
+    .run()
+}
+
 export async function markInboundQueued(env: Env, messageId: string): Promise<void> {
   await env.DB.prepare(
     `UPDATE inbound_events SET status = 'queued', queued_at = ?
@@ -118,6 +126,20 @@ export async function markInboundProcessed(env: Env, messageId: string): Promise
   )
     .bind(now(), messageId)
     .run()
+}
+
+export async function recentPreferences(
+  env: Env,
+  phone: string,
+  limit = 20
+): Promise<Array<{ key: string; value: string }>> {
+  const result = await env.DB.prepare(
+    `SELECT preference_key AS key, preference_value AS value
+     FROM preferences WHERE phone = ? ORDER BY updated_at DESC LIMIT ?`
+  )
+    .bind(phone, Math.min(Math.max(limit, 1), 50))
+    .all<{ key: string; value: string }>()
+  return result.results
 }
 
 export async function recentMessages(
